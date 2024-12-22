@@ -13,7 +13,7 @@ std::unordered_map<unsigned int, std::queue<SDL_Event>> SdlWindow::s_Events;
 
 SdlWindow::SdlWindow(const int width, const int height, const std::string &title) {
     m_Title = title;
-    m_Handle = SDL_CreateWindow(m_Title.c_str(), width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS);
+    m_Handle = SDL_CreateWindow(m_Title.c_str(), width, height, SDL_WINDOW_OPENGL);
     if (!m_Handle) {
         throw std::runtime_error("Failed to create window \"" + std::string(SDL_GetError()) + "\"");
     }

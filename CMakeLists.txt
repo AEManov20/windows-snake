@@ -14,4 +14,7 @@ add_executable(UntitledRenderingFramework main.cpp
         GlfwWindow.h
         SdlWindow.cpp
         SdlWindow.h
+        GraphicsShader.h
+        GlslGraphicsShader.cpp
+        GlslGraphicsShader.h
 )

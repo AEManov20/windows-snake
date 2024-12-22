@@ -60,7 +60,7 @@ void GlfwWindow::PollEvents() {
     glfwPollEvents();
 
     if (currentContext != m_Handle) {
-        glfwSwapBuffers(currentContext);
+        glfwMakeContextCurrent(currentContext);
     }
 }
 
