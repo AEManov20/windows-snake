@@ -39,7 +39,35 @@ public:
 private:
     GLuint m_BufferId;
     BufferItemLayout m_Layout;
-    bool m_Immutable;
 };
+
+class GlIndexBuffer : public IndexBuffer
+{
+public:
+    GlIndexBuffer(const uint32_t *indices, size_t count);
+
+    GlIndexBuffer(GlIndexBuffer &&other) noexcept;
+
+    GlIndexBuffer &operator=(GlIndexBuffer &&other) noexcept;
+
+    GlIndexBuffer(const GlVertexBuffer &other) = delete;
+
+    GlIndexBuffer &operator=(const GlVertexBuffer &) = delete;
+
+    ~GlIndexBuffer() override;
+
+    void Bind() const override;
+
+    void Unbind() const override;
+
+    void SetIndices(const uint32_t *indices, size_t count) override;
+
+    [[nodiscard]] size_t GetCount() const override { return m_Count; }
+
+private:
+    GLuint m_BufferId;
+    size_t m_Count;
+};
+
 
 #endif //GLBUFFER_H
