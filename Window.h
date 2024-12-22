@@ -6,7 +6,7 @@
 #define WINDOW_H
 #include "RenderTarget.h"
 
-class Window : RenderTarget
+class Window : public RenderTarget
 {
 public:
     virtual bool ShouldClose() = 0;

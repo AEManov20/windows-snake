@@ -96,6 +96,7 @@ struct BufferItemLayout
     BufferItemLayout(const std::initializer_list<BufferElement> &elements)
         : m_Elements(elements)
     {
+        CalculateOffsetsAndStride();
     }
 
     [[nodiscard]] size_t GetStride() const;
@@ -147,7 +148,9 @@ public:
 
     virtual void Unbind() const = 0;
 
-    virtual void SetIndices(const uint32_t *indices, size_t size) = 0;
+    virtual void SetIndices(const uint32_t *indices, size_t count) = 0;
+
+    virtual size_t GetCount() const = 0;
 };
 
 #endif // VERTEXBUFFER_H
