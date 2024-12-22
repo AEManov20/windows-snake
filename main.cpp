@@ -14,16 +14,18 @@
 #include <filesystem>
 
 #include "GlfwWindow.h"
-#include "GlslGraphicsShader.h"
+#include "GlGraphicsShader.h"
 #include "SdlWindow.h"
 
-static void errorCallback(int error, const char *description) {
+static void errorCallback(int error, const char *description)
+{
     std::cerr << "GLFW Error (" << error << "): " << description << std::endl;
 }
 
 std::string readFileToString(const std::string &path);
 
-std::string readFileToString(const std::string &path) {
+std::string readFileToString(const std::string &path)
+{
     std::ifstream file(path, std::ios::binary);
 
     if (!file.is_open())
@@ -37,7 +39,8 @@ std::string readFileToString(const std::string &path) {
     return buffer.str();
 }
 
-GLuint createBufferFromData(const GLvoid *data, const GLsizeiptr size) {
+GLuint createBufferFromData(const GLvoid *data, const GLsizeiptr size)
+{
     GLuint buffer;
     glGenBuffers(1, &buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
@@ -47,11 +50,13 @@ GLuint createBufferFromData(const GLvoid *data, const GLsizeiptr size) {
     return buffer;
 }
 
-void freeBufferData(const GLuint buffer) {
+void freeBufferData(const GLuint buffer)
+{
     glDeleteBuffers(1, &buffer);
 }
 
-void PrintGLVersion() {
+void PrintGLVersion()
+{
     std::cout << "GL version: " << epoxy_gl_version();
     if (!epoxy_is_desktop_gl()) std::cout << " ES";
     std::cout << std::endl;
@@ -62,10 +67,12 @@ void PrintGLVersion() {
 }
 
 // this initializes an environment for GLFW + OpenGL ES 3.2
-bool InitGLFWEnvironment() {
+bool InitGLFWEnvironment()
+{
     glfwSetErrorCallback(errorCallback);
 
-    if (!glfwInit()) {
+    if (!glfwInit())
+    {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
     }
@@ -78,7 +85,8 @@ bool InitGLFWEnvironment() {
 }
 
 // this initializes an environment for SDL + OpenGL ES 3.2
-bool InitSDLEnvironment() {
+bool InitSDLEnvironment()
+{
     // request OpenGL ES 3.2
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -88,7 +96,8 @@ bool InitSDLEnvironment() {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     // init SDL
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    {
         std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return false;
     }
@@ -96,15 +105,18 @@ bool InitSDLEnvironment() {
     return true;
 }
 
-void DeinitGLFWEnvironment() {
+void DeinitGLFWEnvironment()
+{
     glfwTerminate();
 }
 
-void DeinitSDLEnvironment() {
+void DeinitSDLEnvironment()
+{
     SDL_Quit();
 }
 
-int main() {
+int main()
+{
     std::cout << std::filesystem::current_path() << std::endl;
 
     if (!InitGLFWEnvironment()) return 1;
@@ -117,8 +129,8 @@ int main() {
 
     constexpr std::array triangleVertices = {
         -1.f, -1.f, 0.f,
-         1.f, -1.f, 0.f,
-         0.f,  1.f, 0.f,
+        1.f, -1.f, 0.f,
+        0.f, 1.f, 0.f,
     };
 
     constexpr std::array triangleColors = {
@@ -128,18 +140,16 @@ int main() {
     };
 
     {
-        GlfwWindow window(1280, 720, "GlfwWindow");
+        SdlWindow window(1280, 720, "SdlWindow");
         window.Bind();
 
         const GLuint uvBuffer = createBufferFromData(triangleUV.data(), triangleUV.size() * sizeof(triangleUV[0]));
         const GLuint vertexBuffer = createBufferFromData(triangleVertices.data(),
-            triangleVertices.size() * sizeof(triangleVertices[0]));
+                                                         triangleVertices.size() * sizeof(triangleVertices[0]));
         const GLuint colorBuffer = createBufferFromData(triangleColors.data(),
-            triangleColors.size() * sizeof(triangleColors[0]));
-
-        {
-            GlslGraphicsShader shader(readFileToString("../resources/vertexShader.glsl"),
-                readFileToString("../resources/fragmentShader.glsl"));
+                                                        triangleColors.size() * sizeof(triangleColors[0])); {
+            GlGraphicsShader shader(readFileToString("../resources/vertexShader.glsl"),
+                                    readFileToString("../resources/fragmentShader.glsl"));
 
             const GLuint program = shader.GetProgramID();
 
@@ -149,7 +159,8 @@ int main() {
 
             float degrees = 0.f;
 
-            while (!window.ShouldClose()) {
+            while (!window.ShouldClose())
+            {
                 window.PollEvents();
 
                 auto winResolution = window.GetDimensions();
@@ -161,15 +172,17 @@ int main() {
                 shader.Bind();
 
                 shader.SetUniformMatrix4x4("mvp", glm::perspective(
-                    glm::radians(90.f),
-                    static_cast<float>(winResolution.x) / static_cast<float>(winResolution.y),
-                    0.01f, 100.f) *
-                    // view mat
-                    lookAt(glm::vec3(0.f, 0.f, -6.f), glm::vec3(0.f, 0.f, 0.f),
-                                glm::vec3(0.f, 1.f, 0.f)) *
-                    // model mat
-                    rotate(glm::mat4(1.f), glm::radians(degrees), glm::vec3(0.f, 1.f, 0.f)) *
-                    scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
+                                                      glm::radians(90.f),
+                                                      static_cast<float>(winResolution.x) / static_cast<float>(
+                                                          winResolution.y),
+                                                      0.01f, 100.f) *
+                                                  // view mat
+                                                  lookAt(glm::vec3(0.f, 0.f, -6.f), glm::vec3(0.f, 0.f, 0.f),
+                                                         glm::vec3(0.f, 1.f, 0.f)) *
+                                                  // model mat
+                                                  rotate(glm::mat4(1.f), glm::radians(degrees),
+                                                         glm::vec3(0.f, 1.f, 0.f)) *
+                                                  scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
 
                 degrees += 1.f;
                 if (degrees >= 360.f)

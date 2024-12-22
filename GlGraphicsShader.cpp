@@ -2,14 +2,15 @@
 // Created by alex on 30.11.24.
 //
 
-#include "GlslGraphicsShader.h"
+#include "GlGraphicsShader.h"
 
 #include <stdexcept>
 #include <utility>
 #include <vector>
 #include <epoxy/gl.h>
 
-GlslGraphicsShader::GlslGraphicsShader(const std::string &vertexSource, const std::string &fragmentSource) {
+GlGraphicsShader::GlGraphicsShader(const std::string &vertexSource, const std::string &fragmentSource)
+{
     const GLuint vertexShader = CompileShader(GL_VERTEX_SHADER, vertexSource);
     const GLuint fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fragmentSource);
 
@@ -24,7 +25,8 @@ GlslGraphicsShader::GlslGraphicsShader(const std::string &vertexSource, const st
 
     glGetProgramiv(program, GL_LINK_STATUS, &linkResult);
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
-    if (linkResult != GL_TRUE) {
+    if (linkResult != GL_TRUE)
+    {
         std::vector<GLchar> infoLog(static_cast<size_t>(infoLogLength) + 1);
         glGetProgramInfoLog(program, infoLogLength, nullptr, &infoLog[0]);
 
@@ -40,26 +42,30 @@ GlslGraphicsShader::GlslGraphicsShader(const std::string &vertexSource, const st
     m_Program = program;
 }
 
-GlslGraphicsShader::GlslGraphicsShader(GlslGraphicsShader &&other) noexcept :
-    m_Program(std::exchange(other.m_Program, 0)) {}
+GlGraphicsShader::GlGraphicsShader(GlGraphicsShader &&other) noexcept : m_Program(std::exchange(other.m_Program, 0))
+{
+}
 
-GlslGraphicsShader & GlslGraphicsShader::operator=(GlslGraphicsShader &&other) noexcept {
-    GlslGraphicsShader temp(std::move(other));
+GlGraphicsShader &GlGraphicsShader::operator=(GlGraphicsShader &&other) noexcept
+{
+    GlGraphicsShader temp(std::move(other));
     std::swap(m_Program, temp.m_Program);
 
     return *this;
 }
 
-void GlslGraphicsShader::Bind() {
+void GlGraphicsShader::Bind()
+{
     glUseProgram(m_Program);
 }
 
-void GlslGraphicsShader::Unbind() {
+void GlGraphicsShader::Unbind()
+{
     glUseProgram(0);
 }
 
 #define IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, GL_TYPE, SIZE, ...) \
-    void GlslGraphicsShader::SetUniform##CAPITALIZED_TYPE##SIZE(const std::string &name, const glm::vec<SIZE, TYPE> v) { \
+    void GlGraphicsShader::SetUniform##CAPITALIZED_TYPE##SIZE(const std::string &name, const glm::vec<SIZE, TYPE> v) { \
         const GLint location = glGetUniformLocation(m_Program, name.c_str());                                            \
         if (location == -1) {                                                                                            \
             throw std::runtime_error("Uniform '" + name + "' not found");                                                \
@@ -71,28 +77,33 @@ void GlslGraphicsShader::Unbind() {
     IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 1##GL_TYPE, 1, v.x)                 \
     IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 2##GL_TYPE, 2, v.x, v.y)            \
     IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 3##GL_TYPE, 3, v.x, v.y, v.z)       \
-    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 4##GL_TYPE, 4, v.x, v.y, v.z, v.w)  \
+    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 4##GL_TYPE, 4, v.x, v.y, v.z, v.w)
 
 IMPL_UNIFORM_VEC_ALL(Float, float, f)
 IMPL_UNIFORM_VEC_ALL(Int, int, i)
 IMPL_UNIFORM_VEC_ALL(UInt, uint, ui)
 
-void GlslGraphicsShader::SetUniformMatrix4x4(const std::string &name, const glm::mat4 &matrix) {
+void GlGraphicsShader::SetUniformMatrix4x4(const std::string &name, const glm::mat4 &matrix)
+{
     const GLint location = glGetUniformLocation(m_Program, name.c_str());
-    if (location == -1) {
+    if (location == -1)
+    {
         throw std::runtime_error("Uniform '" + name + "' not found");
     }
     glProgramUniformMatrix4fv(m_Program, location, 1, false, &matrix[0][0]);
 }
 
 
-GlslGraphicsShader::~GlslGraphicsShader() {
-    if (m_Program != 0) {
+GlGraphicsShader::~GlGraphicsShader()
+{
+    if (m_Program != 0)
+    {
         glDeleteProgram(m_Program);
     }
 }
 
-GLuint GlslGraphicsShader::CompileShader(const GLenum shaderType, const std::string &source) {
+GLuint GlGraphicsShader::CompileShader(const GLenum shaderType, const std::string &source)
+{
     const GLuint shader = glCreateShader(shaderType);
 
     GLint compilationStatus = GL_FALSE;
@@ -104,7 +115,8 @@ GLuint GlslGraphicsShader::CompileShader(const GLenum shaderType, const std::str
 
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compilationStatus);
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
-    if (compilationStatus == GL_FALSE) {
+    if (compilationStatus == GL_FALSE)
+    {
         std::vector<GLchar> infoLog(static_cast<size_t>(infoLogLength) + 1);
         glGetShaderInfoLog(shader, infoLogLength, nullptr, &infoLog[0]);
 

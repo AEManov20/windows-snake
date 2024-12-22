@@ -15,6 +15,9 @@ add_executable(UntitledRenderingFramework main.cpp
         SdlWindow.cpp
         SdlWindow.h
         GraphicsShader.h
-        GlslGraphicsShader.cpp
-        GlslGraphicsShader.h
+        GlGraphicsShader.cpp
+        GlGraphicsShader.h
+        VertexBuffer.h
+        GlVertexBuffer.cpp
+        GlVertexBuffer.h
 )
