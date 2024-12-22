@@ -1,18 +1,20 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <epoxy/gl.h>
 #include <glm/gtx/color_space.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <SDL3/SDL.h>
 #include <GLFW/glfw3.h>
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <list>
 #include <iostream>
 #include <random>
-#include <utility>
-#include <bits/random.h>
+#include <array>
+#include <filesystem>
 
+#include "GlfwWindow.h"
+#include "GlslGraphicsShader.h"
 #include "SdlWindow.h"
 
 static void errorCallback(int error, const char *description) {
@@ -20,8 +22,6 @@ static void errorCallback(int error, const char *description) {
 }
 
 std::string readFileToString(const std::string &path);
-
-GLuint compileShaders(const std::string &vertexCode, const std::string &fragmentCode);
 
 std::string readFileToString(const std::string &path) {
     std::ifstream file(path, std::ios::binary);
@@ -37,74 +37,18 @@ std::string readFileToString(const std::string &path) {
     return buffer.str();
 }
 
-GLuint compileShaders(const std::string &vertexCode, const std::string &fragmentCode) {
-    const GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    const GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+GLuint createBufferFromData(const GLvoid *data, const GLsizeiptr size) {
+    GLuint buffer;
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    GLint compilationResult = GL_FALSE;
-    GLint infoLogLength;
+    return buffer;
+}
 
-    char const *vertexCodePtr = vertexCode.c_str();
-    char const *fragmentCodePtr = fragmentCode.c_str();
-
-    glShaderSource(vertexShader, 1, &vertexCodePtr, nullptr);
-    glCompileShader(vertexShader);
-
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compilationResult);
-    glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &infoLogLength);
-    if (infoLogLength > 0) {
-        std::vector<char> vertexShaderErrorMessage(
-            static_cast<size_t>(infoLogLength) + 1);
-        glGetShaderInfoLog(vertexShader, infoLogLength, nullptr,
-                           &vertexShaderErrorMessage[0]);
-        std::cout << "Vertex compilation error: ";
-        std::cout << vertexShaderErrorMessage.data() << std::endl;
-
-        return 0;
-    }
-
-    glShaderSource(fragmentShader, 1, &fragmentCodePtr, nullptr);
-    glCompileShader(fragmentShader);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compilationResult);
-    glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &infoLogLength);
-    if (infoLogLength > 0) {
-        std::vector<char> fragmentShaderErrorMessage(
-            static_cast<size_t>(infoLogLength) + 1);
-        glGetShaderInfoLog(fragmentShader, infoLogLength, nullptr,
-                           &fragmentShaderErrorMessage[0]);
-        std::cout << "Fragment shader compilation error: ";
-        std::cout << fragmentShaderErrorMessage.data() << std::endl;
-
-        return 0;
-    }
-
-    GLuint program = glCreateProgram();
-    GLint linkResult;
-    glAttachShader(program, vertexShader);
-    glAttachShader(program, fragmentShader);
-    glLinkProgram(program);
-
-    glGetProgramiv(program, GL_LINK_STATUS, &linkResult);
-    glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
-    if (infoLogLength > 0) {
-        std::vector<char> programErrorMessage(static_cast<size_t>(infoLogLength) +
-                                              1);
-        glGetProgramInfoLog(program, infoLogLength, nullptr,
-                            &programErrorMessage[0]);
-        std::cout << "Program linking error: ";
-        std::cout << programErrorMessage.data() << std::endl;
-
-        return 0;
-    }
-
-    glDetachShader(program, vertexShader);
-    glDetachShader(program, fragmentShader);
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    return program;
+void freeBufferData(const GLuint buffer) {
+    glDeleteBuffers(1, &buffer);
 }
 
 void PrintGLVersion() {
@@ -129,6 +73,7 @@ bool InitGLFWEnvironment() {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_SAMPLES, 4);
     return true;
 }
 
@@ -159,221 +104,109 @@ void DeinitSDLEnvironment() {
     SDL_Quit();
 }
 
-glm::ivec2 GetScreenResolution() {
-    const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-
-    return {mode->width, mode->height};
-}
-
-struct WindowContext {
-    SdlWindow window;
-    glm::vec4 clearColor;
-};
-
-void updateWindow(WindowContext &context) {
-    context.window.Bind();
-
-    glClearColor(context.clearColor.r, context.clearColor.g, context.clearColor.b, context.clearColor.a);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    context.window.SwapBuffers();
-    context.window.PollEvents();
-
-    context.window.Unbind();
-}
-
-enum class Direction {
-    Up, Down, Left, Right
-};
-
 int main() {
-    if (!InitSDLEnvironment()) return 1;
+    std::cout << std::filesystem::current_path() << std::endl;
+
+    if (!InitGLFWEnvironment()) return 1;
+
+    constexpr std::array triangleUV = {
+        0.f, 0.f,
+        1.f, 0.f,
+        .5f, 1.f,
+    };
+
+    constexpr std::array triangleVertices = {
+        -1.f, -1.f, 0.f,
+         1.f, -1.f, 0.f,
+         0.f,  1.f, 0.f,
+    };
+
+    constexpr std::array triangleColors = {
+        1.f, 0.f, 0.f,
+        0.f, 1.f, 0.f,
+        0.f, 0.f, 1.f,
+    };
 
     {
-        std::random_device rd;
-        std::mt19937 gen(rd());
+        GlfwWindow window(1280, 720, "GlfwWindow");
+        window.Bind();
 
-        constexpr int gridWidth = 16, gridHeight = 9;
-        constexpr int winWidth = 120, winHeight = 120;
+        const GLuint uvBuffer = createBufferFromData(triangleUV.data(), triangleUV.size() * sizeof(triangleUV[0]));
+        const GLuint vertexBuffer = createBufferFromData(triangleVertices.data(),
+            triangleVertices.size() * sizeof(triangleVertices[0]));
+        const GLuint colorBuffer = createBufferFromData(triangleColors.data(),
+            triangleColors.size() * sizeof(triangleColors[0]));
 
-        std::uniform_int_distribution<> gridWidthGenerator(0, gridWidth - 1);
-        std::uniform_int_distribution<> gridHeightGenerator(0, gridHeight - 1);
+        {
+            GlslGraphicsShader shader(readFileToString("../resources/vertexShader.glsl"),
+                readFileToString("../resources/fragmentShader.glsl"));
 
-        const uint64_t tickIntervalMilliseconds = 200;
-        Direction direction = Direction::Up;
-        Direction previousDirection = Direction::Up;
+            const GLuint program = shader.GetProgramID();
 
-        glm::ivec2 snakePosition = glm::ivec2(gridWidthGenerator(gen), gridHeightGenerator(gen));
-        glm::ivec2 foodPosition = glm::ivec2(gridWidthGenerator(gen), gridHeightGenerator(gen));
+            const GLint positionAttribLoc = glGetAttribLocation(program, "position");
+            const GLint uvAttribLoc = glGetAttribLocation(program, "uv");
+            const GLint colorAttribLoc = glGetAttribLocation(program, "color");
 
-        WindowContext food{
-            SdlWindow(winWidth, winHeight, "Food"),
-            glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
-        };
+            float degrees = 0.f;
 
-        std::list<WindowContext> snake;
-        snake.emplace_back(WindowContext{
-            SdlWindow(winWidth, winHeight, "Snake"),
-            glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-        });
-        snake.emplace_back(WindowContext{
-            SdlWindow(winWidth, winHeight, "Snake"),
-            glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-        });
-        snake.emplace_back(WindowContext{
-            SdlWindow(winWidth, winHeight, "Snake"),
-            glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-        });
+            while (!window.ShouldClose()) {
+                window.PollEvents();
 
-        uint64_t timeNow = SDL_GetPerformanceCounter();
-        uint64_t elapsedSinceLastTick = 0;
+                auto winResolution = window.GetDimensions();
 
-        bool shouldQuit = false;
-        while (!shouldQuit) {
-            const uint64_t timePrevious = timeNow;
-            timeNow = SDL_GetPerformanceCounter();
+                glClearColor(0.f, 0.f, 0.f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glViewport(0, 0, winResolution.x, winResolution.y);
 
-            elapsedSinceLastTick += (timeNow - timePrevious) * 1000 / SDL_GetPerformanceFrequency();
+                shader.Bind();
 
-            // update windows
-            updateWindow(food);
-            for (auto &snakePart: snake) {
-                updateWindow(snakePart);
+                shader.SetUniformMatrix4x4("mvp", glm::perspective(
+                    glm::radians(90.f),
+                    static_cast<float>(winResolution.x) / static_cast<float>(winResolution.y),
+                    0.01f, 100.f) *
+                    // view mat
+                    lookAt(glm::vec3(0.f, 0.f, -6.f), glm::vec3(0.f, 0.f, 0.f),
+                                glm::vec3(0.f, 1.f, 0.f)) *
+                    // model mat
+                    rotate(glm::mat4(1.f), glm::radians(degrees), glm::vec3(0.f, 1.f, 0.f)) *
+                    scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
+
+                degrees += 1.f;
+                if (degrees >= 360.f)
+                    degrees -= 360.f;
+
+                glEnableVertexAttribArray(positionAttribLoc);
+                glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+                glVertexAttribPointer(positionAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+                glEnableVertexAttribArray(uvAttribLoc);
+                glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+                glVertexAttribPointer(uvAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+                glEnableVertexAttribArray(colorAttribLoc);
+                glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
+                glVertexAttribPointer(colorAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+
+                glDisableVertexAttribArray(positionAttribLoc);
+                glDisableVertexAttribArray(uvAttribLoc);
+                glDisableVertexAttribArray(colorAttribLoc);
+
+                shader.Unbind();
+
+                window.SwapBuffers();
             }
-
-            SDL_Event event;
-            while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_KEY_DOWN, SDL_EVENT_KEY_UP)) {
-                if (event.type != SDL_EVENT_KEY_DOWN) {
-                    continue;
-                }
-
-                switch (event.key.scancode) {
-                    case SDL_SCANCODE_ESCAPE:
-                        shouldQuit = true;
-                        break;
-                    case SDL_SCANCODE_UP:
-                        if (previousDirection == Direction::Down) break;
-                        direction = Direction::Up;
-                        break;
-                    case SDL_SCANCODE_DOWN:
-                        if (previousDirection == Direction::Up) break;
-                        direction = Direction::Down;
-                        break;
-                    case SDL_SCANCODE_LEFT:
-                        if (previousDirection == Direction::Right) break;
-                        direction = Direction::Left;
-                        break;
-                    case SDL_SCANCODE_RIGHT:
-                        if (previousDirection == Direction::Left) break;
-                        direction = Direction::Right;
-                        break;
-                    default: ;
-                }
-            }
-
-            // tick game state
-            previousDirection = direction;
-
-            if (elapsedSinceLastTick < tickIntervalMilliseconds) {
-                continue;
-            } else {
-                elapsedSinceLastTick = 0;
-            }
-
-            glm::ivec2 directionVector;
-            switch (direction) {
-                case Direction::Up:
-                    directionVector = glm::ivec2(0, -1);
-                    break;
-                case Direction::Down:
-                    directionVector = glm::ivec2(0, 1);
-                    break;
-                case Direction::Left:
-                    directionVector = glm::ivec2(-1, 0);
-                    break;
-                case Direction::Right:
-                    directionVector = glm::ivec2(1, 0);
-                    break;
-            }
-
-            auto newHeadPosition = snakePosition + directionVector;
-
-            if (newHeadPosition.x < 0) newHeadPosition.x = gridWidth - 1;
-            else if (newHeadPosition.x >= gridWidth) newHeadPosition.x = 0;
-
-            if (newHeadPosition.y < 0) newHeadPosition.y = gridHeight - 1;
-            else if (newHeadPosition.y >= gridHeight) newHeadPosition.y = 0;
-
-            snakePosition = newHeadPosition;
-
-            bool growFlag = snakePosition == foodPosition;
-
-            if (snakePosition == foodPosition) {
-                foodPosition = glm::ivec2(gridWidthGenerator(gen), gridHeightGenerator(gen));
-            }
-
-            food.window.SetPosition(glm::ivec2(winWidth, winHeight) * foodPosition);
-
-            snake.emplace_back(WindowContext{
-                SdlWindow(winWidth, winHeight, "Snake"),
-                glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-            });
-            snake.back().window.SetPosition(glm::ivec2(winWidth, winHeight) * newHeadPosition);
-
-            if (!growFlag) snake.pop_front();
         }
+
+        freeBufferData(uvBuffer);
+        freeBufferData(vertexBuffer);
+        freeBufferData(colorBuffer);
     }
 
-    // {
-    //     constexpr int winWidth = 120,
-    //             winHeight = 120;
-    //
-    //     std::vector<WindowContext> windowContexts;
-    //
-    //     for (auto i = 0, c = 0; i < 16; i++) {
-    //         for (auto j = 0; j < 10; j++, c++) {
-    //             auto win = SdlWindow(winWidth, winHeight, std::to_string(i) + "." + std::to_string(j));
-    //
-    //             win.SetPosition(glm::ivec2((winWidth + 0) * i, (winHeight + 0) * j));
-    //             windowContexts.emplace_back(WindowContext {
-    //                 std::move(win),
-    //                 glm::vec4(rgbColor(glm::vec3((static_cast<float>(c) / 16.f) * 360.f, 1.f, 1.f)), 1.f),
-    //             });
-    //         }
-    //     }
-    //
-    //     bool shouldQuit = false;
-    //     while (!shouldQuit) {
-    //         if (windowContexts.empty()) {
-    //             shouldQuit = true;
-    //         }
-    //
-    //         for (auto&[window, clearColor] : windowContexts) {
-    //             window.Bind();
-    //
-    //             glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-    //             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //
-    //             window.SwapBuffers();
-    //             window.PollEvents();
-    //
-    //             window.Unbind();
-    //         }
-    //
-    //         std::vector<size_t> indicesForDeletion;
-    //         for (size_t i = 0; i < windowContexts.size(); i++) {
-    //             if (windowContexts[i].window.ShouldClose()) {
-    //                 indicesForDeletion.push_back(i);
-    //             }
-    //         }
-    //
-    //         for (const size_t idx : indicesForDeletion) {
-    //             windowContexts.erase(windowContexts.begin() + idx);
-    //         }
-    //     }
-    // }
 
-    DeinitSDLEnvironment();
+    DeinitGLFWEnvironment();
 
     return 0;
 }
