@@ -15,6 +15,7 @@
 
 #include "GlfwWindow.h"
 #include "GlGraphicsShader.h"
+#include "GlVertexBuffer.h"
 #include "SdlWindow.h"
 
 static void errorCallback(int error, const char *description)
@@ -143,11 +144,25 @@ int main()
         SdlWindow window(1280, 720, "SdlWindow");
         window.Bind();
 
-        const GLuint uvBuffer = createBufferFromData(triangleUV.data(), triangleUV.size() * sizeof(triangleUV[0]));
-        const GLuint vertexBuffer = createBufferFromData(triangleVertices.data(),
-                                                         triangleVertices.size() * sizeof(triangleVertices[0]));
-        const GLuint colorBuffer = createBufferFromData(triangleColors.data(),
-                                                        triangleColors.size() * sizeof(triangleColors[0])); {
+        // const GLuint uvBuffer = createBufferFromData(triangleUV.data(), triangleUV.size() * sizeof(triangleUV[0]));
+        // const GLuint vertexBuffer = createBufferFromData(triangleVertices.data(),
+        //                                                  triangleVertices.size() * sizeof(triangleVertices[0]));
+        // const GLuint colorBuffer = createBufferFromData(triangleColors.data(),
+        //                                                 triangleColors.size() * sizeof(triangleColors[0]));
+
+        GlVertexBuffer uvBuffer(triangleUV.data(), triangleUV.size(), BufferItemLayout{
+            BufferElement(ShaderDataType::Float2, "uv")
+        });
+
+        GlVertexBuffer vertexBuffer(triangleVertices.data(), triangleVertices.size(), BufferItemLayout{
+            BufferElement(ShaderDataType::Float3, "position")
+        });
+
+        GlVertexBuffer colorBuffer(triangleColors.data(), triangleColors.size(), BufferItemLayout{
+            BufferElement(ShaderDataType::Float3, "color")
+        });
+
+        {
             GlGraphicsShader shader(readFileToString("../resources/vertexShader.glsl"),
                                     readFileToString("../resources/fragmentShader.glsl"));
 
@@ -189,15 +204,15 @@ int main()
                     degrees -= 360.f;
 
                 glEnableVertexAttribArray(positionAttribLoc);
-                glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+                vertexBuffer.Bind();
                 glVertexAttribPointer(positionAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
                 glEnableVertexAttribArray(uvAttribLoc);
-                glBindBuffer(GL_ARRAY_BUFFER, uvBuffer);
+                uvBuffer.Bind();
                 glVertexAttribPointer(uvAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
                 glEnableVertexAttribArray(colorAttribLoc);
-                glBindBuffer(GL_ARRAY_BUFFER, colorBuffer);
+                colorBuffer.Bind();
                 glVertexAttribPointer(colorAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -213,9 +228,9 @@ int main()
             }
         }
 
-        freeBufferData(uvBuffer);
-        freeBufferData(vertexBuffer);
-        freeBufferData(colorBuffer);
+        // freeBufferData(uvBuffer);
+        // freeBufferData(vertexBuffer);
+        // freeBufferData(colorBuffer);
     }
 
 
