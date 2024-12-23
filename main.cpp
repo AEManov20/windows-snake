@@ -123,43 +123,27 @@ int main()
 
     if (!InitSDLEnvironment()) return 1;
 
-    std::vector triangleVertices = {
-        // first triangle
-        0.5f, 0.5f, 0.f, // top right
-        0.5f, -0.5f, 0.f, // bottom right
-        -0.5f, 0.5f, 0.f, // top left
-        // second triangle
-        0.5f, -0.5f, 0.f, // bottom right
-        -0.5f, -0.5f, 0.f, // bottom left
-        -0.5f, 0.5f, 0.f // top left
-    };
+    std::vector<float> triangleVertices = {};
 
-    std::vector triangleColors = {
-        1.f, 0.f, 0.f,
-        0.f, 1.f, 0.f,
-        0.f, 0.f, 1.f,
-        0.f, 0.f, 1.f,
-        0.f, 1.f, 0.f,
-        1.f, 0.f, 0.f,
-    };
+    constexpr size_t sampleCount = 44100;
+    float piStep = 360.f / static_cast<float>(sampleCount);
+    for (size_t i = 0; i < sampleCount; i++)
+    {
+        triangleVertices.push_back((static_cast<float>(i) / static_cast<float>(sampleCount)) * 2.f - 1.f);
+        triangleVertices.push_back(sinf(glm::radians(static_cast<float>(i) * piStep)));
+        triangleVertices.push_back(0.f);
 
-    std::vector<uint32_t> indices = {0, 1, 2, 3, 4, 5};
+        triangleVertices.push_back((static_cast<float>(i + 1) / static_cast<float>(sampleCount)) * 2.f - 1.f);
+        triangleVertices.push_back(sinf(glm::radians(static_cast<float>(i + 1) * piStep)));
+        triangleVertices.push_back(0.f);
+    }
 
     std::unique_ptr<Window> window = std::make_unique<SdlWindow>(1280, 720, "SdlWindow");
     window->Bind();
 
-    glEnable(GL_DEPTH_TEST);
-
     std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<GlVertexBuffer>(
         triangleVertices.data(), triangleVertices.size(), BufferItemLayout{
             BufferElement(ShaderDataType::Float3, "position")
-        });
-
-    std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<GlIndexBuffer>(indices.data(), indices.size());
-
-    std::shared_ptr<VertexBuffer> colorBuffer = std::make_shared<GlVertexBuffer>(
-        triangleColors.data(), triangleColors.size(), BufferItemLayout{
-            BufferElement(ShaderDataType::Float3, "color")
         });
 
     std::unique_ptr<GraphicsShader> shader = std::make_unique<GlGraphicsShader>(
@@ -168,8 +152,6 @@ int main()
 
     std::unique_ptr<VertexArray> vertexArray = std::make_unique<GlVertexArray>();
     vertexArray->AddVertexBuffer(vertexBuffer);
-    vertexArray->AddVertexBuffer(colorBuffer);
-    vertexArray->SetIndexBuffer(indexBuffer);
 
     float degrees = 0.f;
 
@@ -185,38 +167,24 @@ int main()
 
         shader->Bind();
 
-        shader->SetUniformMatrix4x4("mvp", glm::perspective(
-                                               glm::radians(90.f),
-                                               static_cast<float>(winResolution.x) / static_cast<float>(
-                                                   winResolution.y),
-                                               0.01f, 100.f) *
-                                           // view mat
-                                           lookAt(glm::vec3(0.f, 0.f, -3.f), glm::vec3(0.f, 0.f, 0.f),
-                                                  glm::vec3(0.f, 1.f, 0.f)) *
-                                           // model mat
-                                           rotate(glm::mat4(1.f), glm::radians(degrees),
-                                                  glm::vec3(0.f, 1.f, 0.f)) *
-                                           scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
+        // shader->SetUniformMatrix4x4("mvp", glm::perspective(
+        //                                        glm::radians(90.f),
+        //                                        static_cast<float>(winResolution.x) / static_cast<float>(
+        //                                            winResolution.y),
+        //                                        0.01f, 100.f) *
+        //                                    // view mat
+        //                                    lookAt(glm::vec3(0.f, 0.f, -3.f), glm::vec3(0.f, 0.f, 0.f),
+        //                                           glm::vec3(0.f, 1.f, 0.f)) *
+        //                                    // model mat
+        //                                    rotate(glm::mat4(1.f), glm::radians(degrees),
+        //                                           glm::vec3(0.f, 1.f, 0.f)) *
+        //                                    scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
 
-        degrees += 1.f;
-        if (degrees >= 360.f)
-            degrees -= 360.f;
+        shader->SetUniformMatrix4x4("mvp", glm::mat4(1.f));
 
-        // glEnableVertexAttribArray(positionAttribLoc);
-        // vertexBuffer->Bind();
-        // glVertexAttribPointer(positionAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-        //
-        // glEnableVertexAttribArray(colorAttribLoc);
-        // colorBuffer->Bind();
-        // glVertexAttribPointer(colorAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-        //
-        // glBindBuffer(GL_ARRAY_BUFFER, 0);
-        // glDrawArrays(GL_TRIANGLES, 0, 6);
-        //
-        // glDisableVertexAttribArray(positionAttribLoc);
-        // glDisableVertexAttribArray(colorAttribLoc);
         vertexArray->Bind();
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+        glDrawArrays(GL_LINES, 0, triangleVertices.size() / 3);
 
         shader->Unbind();
 
@@ -227,7 +195,6 @@ int main()
     shader.reset();
 
     vertexBuffer.reset();
-    colorBuffer.reset();
 
     window.reset(nullptr);
 
