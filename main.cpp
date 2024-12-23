@@ -14,8 +14,10 @@
 
 #include "GlfwWindow.h"
 #include "GlGraphicsShader.h"
+#include "GlVertexArray.h"
 #include "GlVertexBuffer.h"
 #include "SdlWindow.h"
+#include "VertexArray.h"
 
 static void errorCallback(int error, const char *description)
 {
@@ -141,30 +143,30 @@ int main()
         1.f, 0.f, 0.f,
     };
 
-    std::vector<uint32_t> indices = { 1, 2, 3, 4, 5, 6 };
+    std::vector<uint32_t> indices = { 0, 1, 2, 3, 4, 5 };
 
     std::unique_ptr<Window> window = std::make_unique<SdlWindow>(1280, 720, "SdlWindow");
     window->Bind();
 
     glEnable(GL_DEPTH_TEST);
 
-    std::unique_ptr<VertexBuffer> vertexBuffer = std::make_unique<GlVertexBuffer>(triangleVertices.data(), triangleVertices.size(), BufferItemLayout{
+    std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<GlVertexBuffer>(triangleVertices.data(), triangleVertices.size(), BufferItemLayout{
         BufferElement(ShaderDataType::Float3, "position")
     });
 
-    // std::unique_ptr<IndexBuffer> indexBuffer = std::make_unique<GlIndexBuffer>(indices.data(), indices.size());
+    std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<GlIndexBuffer>(indices.data(), indices.size());
 
-    std::unique_ptr<VertexBuffer> colorBuffer = std::make_unique<GlVertexBuffer>(triangleColors.data(), triangleColors.size(), BufferItemLayout{
+    std::shared_ptr<VertexBuffer> colorBuffer = std::make_shared<GlVertexBuffer>(triangleColors.data(), triangleColors.size(), BufferItemLayout{
         BufferElement(ShaderDataType::Float3, "color")
     });
 
-    std::unique_ptr<GlGraphicsShader> shader = std::make_unique<GlGraphicsShader>(readFileToString("../resources/vertexShader.glsl"),
+    std::unique_ptr<GraphicsShader> shader = std::make_unique<GlGraphicsShader>(readFileToString("../resources/vertexShader.glsl"),
                             readFileToString("../resources/fragmentShader.glsl"));
 
-    const GLuint program = shader->GetProgramID();
-
-    const GLint positionAttribLoc = glGetAttribLocation(program, "position");
-    const GLint colorAttribLoc = glGetAttribLocation(program, "color");
+    std::unique_ptr<VertexArray> vertexArray = std::make_unique<GlVertexArray>();
+    vertexArray->AddVertexBuffer(vertexBuffer);
+    vertexArray->AddVertexBuffer(colorBuffer);
+    vertexArray->SetIndexBuffer(indexBuffer);
 
     float degrees = 0.f;
 
@@ -197,25 +199,28 @@ int main()
         if (degrees >= 360.f)
             degrees -= 360.f;
 
-        glEnableVertexAttribArray(positionAttribLoc);
-        vertexBuffer->Bind();
-        glVertexAttribPointer(positionAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-        glEnableVertexAttribArray(colorAttribLoc);
-        colorBuffer->Bind();
-        glVertexAttribPointer(colorAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        glDisableVertexAttribArray(positionAttribLoc);
-        glDisableVertexAttribArray(colorAttribLoc);
+        // glEnableVertexAttribArray(positionAttribLoc);
+        // vertexBuffer->Bind();
+        // glVertexAttribPointer(positionAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+        //
+        // glEnableVertexAttribArray(colorAttribLoc);
+        // colorBuffer->Bind();
+        // glVertexAttribPointer(colorAttribLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+        //
+        // glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // glDrawArrays(GL_TRIANGLES, 0, 6);
+        //
+        // glDisableVertexAttribArray(positionAttribLoc);
+        // glDisableVertexAttribArray(colorAttribLoc);
+        vertexArray->Bind();
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
         shader->Unbind();
 
         window->SwapBuffers();
     }
 
+    vertexArray.reset();
     shader.reset();
 
     vertexBuffer.reset();

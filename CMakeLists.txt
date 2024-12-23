@@ -20,4 +20,7 @@ add_executable(UntitledRenderingFramework main.cpp
         VertexBuffer.h
         GlVertexBuffer.cpp
         GlVertexBuffer.h
+        VertexArray.h
+        GlVertexArray.cpp
+        GlVertexArray.h
 )
