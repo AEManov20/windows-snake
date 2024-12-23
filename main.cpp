@@ -125,13 +125,13 @@ int main()
 
     std::vector triangleVertices = {
         // first triangle
-         0.5f,  0.5f, 0.f,  // top right
-         0.5f, -0.5f, 0.f,  // bottom right
-        -0.5f,  0.5f, 0.f,  // top left
+        0.5f, 0.5f, 0.f, // top right
+        0.5f, -0.5f, 0.f, // bottom right
+        -0.5f, 0.5f, 0.f, // top left
         // second triangle
-         0.5f, -0.5f, 0.f,  // bottom right
-        -0.5f, -0.5f, 0.f,  // bottom left
-        -0.5f,  0.5f, 0.f   // top left
+        0.5f, -0.5f, 0.f, // bottom right
+        -0.5f, -0.5f, 0.f, // bottom left
+        -0.5f, 0.5f, 0.f // top left
     };
 
     std::vector triangleColors = {
@@ -143,25 +143,28 @@ int main()
         1.f, 0.f, 0.f,
     };
 
-    std::vector<uint32_t> indices = { 0, 1, 2, 3, 4, 5 };
+    std::vector<uint32_t> indices = {0, 1, 2, 3, 4, 5};
 
     std::unique_ptr<Window> window = std::make_unique<SdlWindow>(1280, 720, "SdlWindow");
     window->Bind();
 
     glEnable(GL_DEPTH_TEST);
 
-    std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<GlVertexBuffer>(triangleVertices.data(), triangleVertices.size(), BufferItemLayout{
-        BufferElement(ShaderDataType::Float3, "position")
-    });
+    std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<GlVertexBuffer>(
+        triangleVertices.data(), triangleVertices.size(), BufferItemLayout{
+            BufferElement(ShaderDataType::Float3, "position")
+        });
 
     std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<GlIndexBuffer>(indices.data(), indices.size());
 
-    std::shared_ptr<VertexBuffer> colorBuffer = std::make_shared<GlVertexBuffer>(triangleColors.data(), triangleColors.size(), BufferItemLayout{
-        BufferElement(ShaderDataType::Float3, "color")
-    });
+    std::shared_ptr<VertexBuffer> colorBuffer = std::make_shared<GlVertexBuffer>(
+        triangleColors.data(), triangleColors.size(), BufferItemLayout{
+            BufferElement(ShaderDataType::Float3, "color")
+        });
 
-    std::unique_ptr<GraphicsShader> shader = std::make_unique<GlGraphicsShader>(readFileToString("../resources/vertexShader.glsl"),
-                            readFileToString("../resources/fragmentShader.glsl"));
+    std::unique_ptr<GraphicsShader> shader = std::make_unique<GlGraphicsShader>(
+        readFileToString("../resources/vertexShader.glsl"),
+        readFileToString("../resources/fragmentShader.glsl"));
 
     std::unique_ptr<VertexArray> vertexArray = std::make_unique<GlVertexArray>();
     vertexArray->AddVertexBuffer(vertexBuffer);
@@ -183,17 +186,17 @@ int main()
         shader->Bind();
 
         shader->SetUniformMatrix4x4("mvp", glm::perspective(
-                                              glm::radians(90.f),
-                                              static_cast<float>(winResolution.x) / static_cast<float>(
-                                                  winResolution.y),
-                                              0.01f, 100.f) *
-                                          // view mat
-                                          lookAt(glm::vec3(0.f, 0.f, -3.f), glm::vec3(0.f, 0.f, 0.f),
-                                                 glm::vec3(0.f, 1.f, 0.f)) *
-                                          // model mat
-                                          rotate(glm::mat4(1.f), glm::radians(degrees),
-                                                 glm::vec3(0.f, 1.f, 0.f)) *
-                                          scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
+                                               glm::radians(90.f),
+                                               static_cast<float>(winResolution.x) / static_cast<float>(
+                                                   winResolution.y),
+                                               0.01f, 100.f) *
+                                           // view mat
+                                           lookAt(glm::vec3(0.f, 0.f, -3.f), glm::vec3(0.f, 0.f, 0.f),
+                                                  glm::vec3(0.f, 1.f, 0.f)) *
+                                           // model mat
+                                           rotate(glm::mat4(1.f), glm::radians(degrees),
+                                                  glm::vec3(0.f, 1.f, 0.f)) *
+                                           scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
 
         degrees += 1.f;
         if (degrees >= 360.f)

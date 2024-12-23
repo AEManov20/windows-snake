@@ -31,17 +31,16 @@ public:
 
     void SetIndexBuffer(const std::shared_ptr<IndexBuffer> &indexBuffer) override;
 
-    [[nodiscard]] const std::vector<std::shared_ptr<VertexBuffer>> &GetVertexBuffers() const override;
+    [[nodiscard]] const std::vector<std::shared_ptr<VertexBuffer> > &GetVertexBuffers() const override;
 
     [[nodiscard]] const std::shared_ptr<IndexBuffer> &GetIndexBuffer() const override;
 
 private:
     GLuint m_ArrayId;
     GLuint m_VertexBufferIndex;
-    std::vector<std::shared_ptr<VertexBuffer>> m_VertexBuffers;
+    std::vector<std::shared_ptr<VertexBuffer> > m_VertexBuffers;
     std::shared_ptr<IndexBuffer> m_IndexBuffer;
 };
-
 
 
 #endif //GLVERTEXARRAY_H

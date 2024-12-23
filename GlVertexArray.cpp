@@ -50,7 +50,7 @@ GlVertexArray::GlVertexArray(GlVertexArray &&other) noexcept
 {
 }
 
-GlVertexArray & GlVertexArray::operator=(GlVertexArray &&other) noexcept
+GlVertexArray &GlVertexArray::operator=(GlVertexArray &&other) noexcept
 {
     GlVertexArray tmp(std::move(other));
 
@@ -85,8 +85,8 @@ void GlVertexArray::AddVertexBuffer(const std::shared_ptr<VertexBuffer> &vertexB
     glBindVertexArray(m_ArrayId);
     vertexBuffer->Bind();
 
-    const auto& layout = vertexBuffer->GetItemLayout();
-    for (const auto& element : layout.GetElements())
+    const auto &layout = vertexBuffer->GetItemLayout();
+    for (const auto &element: layout.GetElements())
     {
         switch (element.m_Type)
         {
@@ -97,11 +97,11 @@ void GlVertexArray::AddVertexBuffer(const std::shared_ptr<VertexBuffer> &vertexB
             {
                 glEnableVertexAttribArray(m_VertexBufferIndex);
                 glVertexAttribPointer(m_VertexBufferIndex,
-                    static_cast<GLint>(element.GetComponentCount()),
-                    ShaderDataTypeToOpenGLBaseType(element.m_Type),
-                    element.m_Normalized ? GL_TRUE : GL_FALSE,
-                    static_cast<GLsizei>(layout.GetStride()),
-                    reinterpret_cast<const void*>(element.m_Offset));
+                                      static_cast<GLint>(element.GetComponentCount()),
+                                      ShaderDataTypeToOpenGLBaseType(element.m_Type),
+                                      element.m_Normalized ? GL_TRUE : GL_FALSE,
+                                      static_cast<GLsizei>(layout.GetStride()),
+                                      reinterpret_cast<const void *>(element.m_Offset));
 
                 m_VertexBufferIndex++;
                 break;
@@ -118,10 +118,10 @@ void GlVertexArray::AddVertexBuffer(const std::shared_ptr<VertexBuffer> &vertexB
             {
                 glEnableVertexAttribArray(m_VertexBufferIndex);
                 glVertexAttribIPointer(m_VertexBufferIndex,
-                    static_cast<GLint>(element.GetComponentCount()),
-                    ShaderDataTypeToOpenGLBaseType(element.m_Type),
-                    static_cast<GLsizei>(layout.GetStride()),
-                    reinterpret_cast<const void*>(element.m_Offset));
+                                       static_cast<GLint>(element.GetComponentCount()),
+                                       ShaderDataTypeToOpenGLBaseType(element.m_Type),
+                                       static_cast<GLsizei>(layout.GetStride()),
+                                       reinterpret_cast<const void *>(element.m_Offset));
 
                 m_VertexBufferIndex++;
                 break;
@@ -135,11 +135,11 @@ void GlVertexArray::AddVertexBuffer(const std::shared_ptr<VertexBuffer> &vertexB
                 {
                     glEnableVertexAttribArray(m_VertexBufferIndex);
                     glVertexAttribPointer(m_VertexBufferIndex,
-                        count,
-                        ShaderDataTypeToOpenGLBaseType(element.m_Type),
-                        element.m_Normalized ? GL_TRUE : GL_FALSE,
-                        static_cast<GLsizei>(layout.GetStride()),
-                        reinterpret_cast<const void*>(element.m_Offset + sizeof(float) * count * i));
+                                          count,
+                                          ShaderDataTypeToOpenGLBaseType(element.m_Type),
+                                          element.m_Normalized ? GL_TRUE : GL_FALSE,
+                                          static_cast<GLsizei>(layout.GetStride()),
+                                          reinterpret_cast<const void *>(element.m_Offset + sizeof(float) * count * i));
                     glVertexAttribDivisor(m_VertexBufferIndex, 1);
                     m_VertexBufferIndex++;
                 }
@@ -160,12 +160,12 @@ void GlVertexArray::SetIndexBuffer(const std::shared_ptr<IndexBuffer> &indexBuff
     glBindVertexArray(0);
 }
 
-const std::vector<std::shared_ptr<VertexBuffer>> & GlVertexArray::GetVertexBuffers() const
+const std::vector<std::shared_ptr<VertexBuffer> > &GlVertexArray::GetVertexBuffers() const
 {
     return m_VertexBuffers;
 }
 
-const std::shared_ptr<IndexBuffer> & GlVertexArray::GetIndexBuffer() const
+const std::shared_ptr<IndexBuffer> &GlVertexArray::GetIndexBuffer() const
 {
     return m_IndexBuffer;
 }

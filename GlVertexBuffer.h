@@ -14,7 +14,7 @@ class GlVertexBuffer : public VertexBuffer
 public:
     explicit GlVertexBuffer(size_t size, BufferItemLayout layout);
 
-    explicit GlVertexBuffer(const float* data, size_t count, BufferItemLayout layout);
+    explicit GlVertexBuffer(const float *data, size_t count, BufferItemLayout layout);
 
     GlVertexBuffer(GlVertexBuffer &&other) noexcept;
 
