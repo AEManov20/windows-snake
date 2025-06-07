@@ -1,3 +1,4 @@
 .idea/
+.direnv/
 build/
 cmake-build-debug/
