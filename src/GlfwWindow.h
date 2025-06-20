@@ -1,6 +1,5 @@
 #ifndef GLFWWINDOW_H
 #define GLFWWINDOW_H
-#include <stdexcept>
 #include <string>
 
 #include "Window.h"

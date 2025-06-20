@@ -139,7 +139,7 @@ void GlVertexArray::AddVertexBuffer(const std::shared_ptr<VertexBuffer> &vertexB
                                           ShaderDataTypeToOpenGLBaseType(element.m_Type),
                                           element.m_Normalized ? GL_TRUE : GL_FALSE,
                                           static_cast<GLsizei>(layout.GetStride()),
-                                          reinterpret_cast<const void *>(element.m_Offset + sizeof(float) * count * i));
+                                          reinterpret_cast<const void *>(element.m_Offset + (sizeof(float) * count * i)));
                     glVertexAttribDivisor(m_VertexBufferIndex, 1);
                     m_VertexBufferIndex++;
                 }

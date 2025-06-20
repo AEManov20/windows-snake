@@ -9,21 +9,15 @@
 #include <sstream>
 #include <vector>
 #include <iostream>
-#include <random>
 #include <filesystem>
+#include <csignal>
 
-#include "GlfwWindow.h"
-#include "GlGraphicsShader.h"
-#include "GlVertexArray.h"
-#include "GlVertexBuffer.h"
-#include "SdlWindow.h"
-#include "VertexArray.h"
 #include "Audio/AudioOutput.h"
 #include "Audio/AudioSource.h"
 
 static void errorCallback(int error, const char *description)
 {
-    std::cerr << "GLFW Error (" << error << "): " << description << std::endl;
+    std::cerr << "GLFW Error (" << error << "): " << description << '\n';
 }
 
 std::string readFileToString(const std::string &path);
@@ -32,8 +26,9 @@ std::string readFileToString(const std::string &path)
 {
     std::ifstream file(path, std::ios::binary);
 
-    if (!file.is_open())
+    if (!file.is_open()) {
         throw std::runtime_error("could not open file");
+    }
 
     std::stringstream buffer;
     buffer << file.rdbuf();
@@ -87,11 +82,11 @@ void PrintGLVersion()
 {
     std::cout << "GL version: " << epoxy_gl_version();
     if (!epoxy_is_desktop_gl()) std::cout << " ES";
-    std::cout << std::endl;
+    std::cout << '\n';
 
     std::cout << "GLSL version: " << epoxy_glsl_version();
     if (!epoxy_is_desktop_gl()) std::cout << " ES";
-    std::cout << std::endl;
+    std::cout << '\n';
 }
 
 // this initializes an environment for GLFW + OpenGL ES 3.2
@@ -99,9 +94,9 @@ bool InitGLFWEnvironment()
 {
     glfwSetErrorCallback(errorCallback);
 
-    if (!glfwInit())
+    if (glfwInit() == 0)
     {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
+        std::cerr << "Failed to initialize GLFW" << '\n';
         return false;
     }
 
@@ -124,9 +119,9 @@ bool InitSDLEnvironment()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     // init SDL
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    if (!SDL_Init(SDL_INIT_VIDEO))
     {
-        std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
+        std::cerr << "Failed to initialize SDL: " << SDL_GetError() << '\n';
         return false;
     }
 
@@ -135,9 +130,9 @@ bool InitSDLEnvironment()
 
 bool InitSDLAudioSubsystem()
 {
-    if (SDL_Init(SDL_INIT_AUDIO) < 0)
+    if (!SDL_Init(SDL_INIT_AUDIO))
     {
-        std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
+        std::cerr << "Failed to initialize SDL: " << SDL_GetError() << '\n';
         return false;
     }
 
@@ -154,13 +149,25 @@ void DeinitSDLEnvironment()
     SDL_Quit();
 }
 
+bool g_ShouldQuit = false;
+
+void SignalInterruptHandler(int _unused)
+{
+    g_ShouldQuit = true;
+}
+
 int main()
 {
-    std::cout << std::filesystem::current_path() << std::endl;
+    signal(SIGINT, SignalInterruptHandler);
+
+    std::cout << std::filesystem::current_path() << '\n';
     InitSDLAudioSubsystem();
 
-    std::unique_ptr<AudioOutput> audioOutput = std::make_unique<SdlAudioOutput>(SignalSpec{48000,
-        ChannelLayout(ChannelLayoutType::STEREO)},
+    std::unique_ptr<AudioOutput> audioOutput = std::make_unique<SdlAudioOutput>(
+        SignalSpec{
+            .m_Rate = 48000,
+            .m_Channels = ChannelLayout(ChannelLayoutType::STEREO)
+        },
         AudioEncoding::Float32);
 
     std::shared_ptr<AudioSource> audioSource = std::make_shared<SourceSine>(SignalSpec{
@@ -170,7 +177,7 @@ int main()
 
     auto frame = audioSource->NextFrame();
 
-    while (frame != std::nullopt)
+    while (frame != std::nullopt && !g_ShouldQuit)
     {
         audioOutput->Write(*frame);
         frame = audioSource->NextFrame();

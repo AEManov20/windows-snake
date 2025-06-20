@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-enum class ShaderDataType
+enum class ShaderDataType : std::uint8_t
 {
     Float,
     Float2,
@@ -116,7 +116,6 @@ private:
         }
     }
 
-private:
     std::vector<BufferElement> m_Elements;
     size_t m_Stride = 0;
 };
@@ -126,31 +125,51 @@ inline size_t BufferItemLayout::GetStride() const { return m_Stride; }
 class VertexBuffer
 {
 public:
-    virtual ~VertexBuffer() = default;
+  VertexBuffer(const VertexBuffer &) = default;
 
-    virtual void Bind() const = 0;
+  VertexBuffer(VertexBuffer &&) = delete;
 
-    virtual void Unbind() const = 0;
+  VertexBuffer &operator=(const VertexBuffer &) = default;
 
-    virtual void SetData(const void *data, size_t size) = 0;
+  VertexBuffer &operator=(VertexBuffer &&) = delete;
 
-    [[nodiscard]] virtual const BufferItemLayout &GetItemLayout() const = 0;
+  VertexBuffer() = default;
 
-    virtual void SetItemLayout(const BufferItemLayout &layout) = 0;
+  virtual ~VertexBuffer() = default;
+
+  virtual void Bind() const = 0;
+
+  virtual void Unbind() const = 0;
+
+  virtual void SetData(const void *data, size_t size) = 0;
+
+  [[nodiscard]] virtual const BufferItemLayout &GetItemLayout() const = 0;
+
+  virtual void SetItemLayout(const BufferItemLayout &layout) = 0;
 };
 
 class IndexBuffer
 {
 public:
-    virtual ~IndexBuffer() = default;
+  IndexBuffer(const IndexBuffer &) = default;
 
-    virtual void Bind() const = 0;
+  IndexBuffer(IndexBuffer &&) = delete;
 
-    virtual void Unbind() const = 0;
+  IndexBuffer &operator=(const IndexBuffer &) = default;
 
-    virtual void SetIndices(const uint32_t *indices, size_t count) = 0;
+  IndexBuffer &operator=(IndexBuffer &&) = delete;
 
-    virtual size_t GetCount() const = 0;
+  IndexBuffer() = default;
+
+  virtual ~IndexBuffer() = default;
+
+  virtual void Bind() const = 0;
+
+  virtual void Unbind() const = 0;
+
+  virtual void SetIndices(const uint32_t *indices, size_t count) = 0;
+
+  virtual size_t GetCount() const = 0;
 };
 
 #endif // VERTEXBUFFER_H

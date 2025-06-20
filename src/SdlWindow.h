@@ -16,7 +16,7 @@
 class SdlWindow final : public Window
 {
 public:
-    SdlWindow(int width, int height, const std::string &title);
+    SdlWindow(int width, int height, std::string title);
 
     SdlWindow(SdlWindow &&other) noexcept;
 
@@ -56,7 +56,6 @@ private:
 
     static std::unordered_map<unsigned int, std::queue<SDL_Event> > s_Events;
 
-private:
     SDL_GLContext m_Context;
     SDL_Window *m_Handle;
     unsigned int m_WindowId;

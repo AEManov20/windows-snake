@@ -4,33 +4,34 @@
 
 #include "GlfwWindow.h"
 
-#include <iostream>
+#include <stdexcept>
 #include <utility>
 #include <GLFW/glfw3.h>
 
-GlfwWindow::GlfwWindow(const int width, const int height, const std::string &title)
-{
-    m_WindowTitle = title;
+using std::string;
 
-    // window creation stage
-    m_Handle = glfwCreateWindow(width, height, m_WindowTitle.c_str(), nullptr, nullptr);
-    if (!m_Handle)
-    {
-        throw std::runtime_error("Failed to create GLFW window");
-    }
+GlfwWindow::GlfwWindow(const int width, const int height, const string &title)
+    : m_WindowTitle(title) {
 
-    // setting swap interval stage
-    // store currently set glfw context
-    GLFWwindow *currentContext = glfwGetCurrentContext();
+  // window creation stage
+  m_Handle =
+      glfwCreateWindow(width, height, m_WindowTitle.c_str(), nullptr, nullptr);
+  if (m_Handle == nullptr) {
+    throw std::runtime_error("Failed to create GLFW window");
+  }
 
-    // make the instance window the current context
-    glfwMakeContextCurrent(m_Handle);
+  // setting swap interval stage
+  // store currently set glfw context
+  GLFWwindow *currentContext = glfwGetCurrentContext();
 
-    // set the swap interval
-    glfwSwapInterval(1);
+  // make the instance window the current context
+  glfwMakeContextCurrent(m_Handle);
 
-    // reset the context back to normal
-    glfwMakeContextCurrent(currentContext);
+  // set the swap interval
+  glfwSwapInterval(1);
+
+  // reset the context back to normal
+  glfwMakeContextCurrent(currentContext);
 }
 
 GlfwWindow::GlfwWindow(GlfwWindow &&other) noexcept : m_Handle(std::exchange(other.m_Handle, nullptr)),
@@ -49,7 +50,7 @@ GlfwWindow &GlfwWindow::operator=(GlfwWindow &&other) noexcept
 
 bool GlfwWindow::ShouldClose()
 {
-    return glfwWindowShouldClose(m_Handle);
+    return glfwWindowShouldClose(m_Handle) != 0;
 }
 
 void GlfwWindow::SwapBuffers()
@@ -95,7 +96,8 @@ void GlfwWindow::Unbind()
 
 glm::ivec2 GlfwWindow::GetDimensions()
 {
-    int width, height;
+    int width;
+    int height;
 
     glfwGetWindowSize(m_Handle, &width, &height);
 

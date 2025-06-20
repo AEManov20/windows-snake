@@ -11,6 +11,16 @@
 class VertexArray
 {
 public:
+    VertexArray(const VertexArray &) = default;
+
+    VertexArray(VertexArray &&) = delete;
+
+    VertexArray &operator=(const VertexArray &) = default;
+
+    VertexArray &operator=(VertexArray &&) = delete;
+
+    VertexArray() = default;
+
     virtual ~VertexArray() = default;
 
     virtual void Bind() = 0;

@@ -9,31 +9,33 @@
 #include <ostream>
 #include <utility>
 
-std::unordered_map<unsigned int, std::queue<SDL_Event> > SdlWindow::s_Events;
+using std::string;
 
-SdlWindow::SdlWindow(const int width, const int height, const std::string &title)
-{
-    m_Title = title;
-    m_Handle = SDL_CreateWindow(m_Title.c_str(), width, height, SDL_WINDOW_OPENGL);
-    if (!m_Handle)
-    {
-        throw std::runtime_error("Failed to create window \"" + std::string(SDL_GetError()) + "\"");
-    }
+std::unordered_map<unsigned int, std::queue<SDL_Event>> SdlWindow::s_Events;
 
-    m_Context = SDL_GL_CreateContext(m_Handle);
-    if (!m_Context)
-    {
-        throw std::runtime_error("Failed to create GL context \"" + std::string(SDL_GetError()) + "\"");
-    }
+SdlWindow::SdlWindow(const int width, const int height, string title)
+    : m_Title(std::move(title)) {
+  m_Handle =
+      SDL_CreateWindow(m_Title.c_str(), width, height, SDL_WINDOW_OPENGL);
+  if (m_Handle == nullptr) {
+    throw std::runtime_error("Failed to create window \"" +
+                             std::string(SDL_GetError()) + "\"");
+  }
 
-    m_WindowId = SDL_GetWindowID(m_Handle);
-    if (!m_WindowId)
-    {
-        throw std::runtime_error("Failed to get window ID \"" + std::string(SDL_GetError()) + "\"");
-    }
+  m_Context = SDL_GL_CreateContext(m_Handle);
+  if (m_Context == nullptr) {
+    throw std::runtime_error("Failed to create GL context \"" +
+                             std::string(SDL_GetError()) + "\"");
+  }
 
-    s_Events.emplace(m_WindowId, std::queue<SDL_Event>());
-    std::cout << "Created event queue for window id " << m_WindowId << std::endl;
+  m_WindowId = SDL_GetWindowID(m_Handle);
+  if (m_WindowId == 0) {
+    throw std::runtime_error("Failed to get window ID \"" +
+                             std::string(SDL_GetError()) + "\"");
+  }
+
+  s_Events.emplace(m_WindowId, std::queue<SDL_Event>());
+  std::cout << "Created event queue for window id " << m_WindowId << '\n';
 }
 
 SdlWindow::SdlWindow(SdlWindow &&other) noexcept : m_Context(std::exchange(other.m_Context, nullptr)),
@@ -65,7 +67,7 @@ void SdlWindow::SwapBuffers()
 {
     if (!SDL_GL_SwapWindow(m_Handle))
     {
-        std::cout << "WARNING: Could not swap buffers \"" << SDL_GetError() << '"' << std::endl;
+        std::cout << "WARNING: Could not swap buffers \"" << SDL_GetError() << '"' << '\n';
     }
 }
 
@@ -77,7 +79,7 @@ void SdlWindow::PollEvents()
         SDL_Event event;
 
         SDL_PumpEvents();
-        while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_WINDOW_FIRST, SDL_EVENT_WINDOW_LAST))
+        while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_WINDOW_FIRST, SDL_EVENT_WINDOW_LAST) != 0)
         {
             if (event.window.windowID == m_WindowId)
             {
@@ -100,7 +102,7 @@ void SdlWindow::SetPosition(glm::ivec2 position)
 {
     if (!SDL_SetWindowPosition(m_Handle, position.x, position.y))
     {
-        std::cout << "WARNING: Could not set window position \"" << SDL_GetError() << '"' << std::endl;
+        std::cout << "WARNING: Could not set window position \"" << SDL_GetError() << '"' << '\n';
     } else
     {
         SDL_SyncWindow(m_Handle);
@@ -112,7 +114,7 @@ glm::ivec2 SdlWindow::GetPosition()
     glm::ivec2 position;
     if (!SDL_GetWindowPosition(m_Handle, &position.x, &position.y))
     {
-        std::cout << "WARNING: Could not get window position \"" << SDL_GetError() << std::endl;
+        std::cout << "WARNING: Could not get window position \"" << SDL_GetError() << '\n';
         return {0, 0};
     }
 
@@ -123,7 +125,7 @@ void SdlWindow::Bind()
 {
     if (!SDL_GL_MakeCurrent(m_Handle, m_Context))
     {
-        std::cout << "WARNING: Could not make GL context \"" << SDL_GetError() << std::endl;
+        std::cout << "WARNING: Could not make GL context \"" << SDL_GetError() << '\n';
     }
 }
 
@@ -133,10 +135,11 @@ void SdlWindow::Unbind()
 
 glm::ivec2 SdlWindow::GetDimensions()
 {
-    int width, height;
+    int width;
+    int height;
     if (!SDL_GetWindowSize(m_Handle, &width, &height))
     {
-        std::cout << "WARNING: Could not get window size \"" << SDL_GetError() << '"' << std::endl;
+        std::cout << "WARNING: Could not get window size \"" << SDL_GetError() << '"' << '\n';
         return {0, 0};
     }
 
@@ -149,13 +152,13 @@ SdlWindow::~SdlWindow()
     {
         if (!SDL_GL_DestroyContext(m_Context))
         {
-            std::cout << "WARNING: Could not destroy GL context \"" << SDL_GetError() << std::endl;
+            std::cout << "WARNING: Could not destroy GL context \"" << SDL_GetError() << '\n';
         }
 
         SDL_DestroyWindow(m_Handle);
 
         s_Events.erase(m_WindowId);
-        std::cout << "Destroyed queue for window id " << m_WindowId << std::endl;
+        std::cout << "Destroyed queue for window id " << m_WindowId << '\n';
 
         m_WindowId = 0;
     }
@@ -166,7 +169,7 @@ void SdlWindow::PushEvent(const unsigned int windowId, const SDL_Event &event)
     if (!s_Events.contains(windowId))
     {
         std::cout << "WARNING: Tried pushing event for a non-existent window id (";
-        std::cout << windowId << ")" << std::endl;
+        std::cout << windowId << ")" << '\n';
 
         return;
     }
@@ -197,7 +200,7 @@ void SdlWindow::HandleEvent(const SDL_Event &event)
 {
     if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
     {
-        std::cout << m_WindowId << " will close next frame" << std::endl;
+        std::cout << m_WindowId << " will close next frame" << '\n';
         m_ShouldClose = true;
     }
 }

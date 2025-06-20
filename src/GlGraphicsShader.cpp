@@ -4,6 +4,7 @@
 
 #include "GlGraphicsShader.h"
 
+#include <GL/gl.h>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -28,7 +29,7 @@ GlGraphicsShader::GlGraphicsShader(const std::string &vertexSource, const std::s
     if (linkResult != GL_TRUE)
     {
         std::vector<GLchar> infoLog(static_cast<size_t>(infoLogLength) + 1);
-        glGetProgramInfoLog(program, infoLogLength, nullptr, &infoLog[0]);
+        glGetProgramInfoLog(program, infoLogLength, nullptr, infoLog.data());
 
         throw std::runtime_error("Program linking failed: " + std::string(infoLog.begin(), infoLog.end()));
     }
@@ -65,7 +66,7 @@ void GlGraphicsShader::Unbind()
 }
 
 #define IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, GL_TYPE, SIZE, ...) \
-    void GlGraphicsShader::SetUniform##CAPITALIZED_TYPE##SIZE(const std::string &name, const glm::vec<SIZE, TYPE> v) { \
+    void GlGraphicsShader::SetUniform##CAPITALIZED_TYPE##SIZE(const std::string &name, const glm::vec<SIZE, TYPE> val) { \
         const GLint location = glGetUniformLocation(m_Program, name.c_str());                                            \
         if (location == -1) {                                                                                            \
             throw std::runtime_error("Uniform '" + name + "' not found");                                                \
@@ -74,10 +75,10 @@ void GlGraphicsShader::Unbind()
     }
 
 #define IMPL_UNIFORM_VEC_ALL(CAPITALIZED_TYPE, TYPE, GL_TYPE) \
-    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 1##GL_TYPE, 1, v.x)                 \
-    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 2##GL_TYPE, 2, v.x, v.y)            \
-    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 3##GL_TYPE, 3, v.x, v.y, v.z)       \
-    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 4##GL_TYPE, 4, v.x, v.y, v.z, v.w)
+    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 1##GL_TYPE, 1, val.x)                 \
+    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 2##GL_TYPE, 2, val.x, val.y)            \
+    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 3##GL_TYPE, 3, val.x, val.y, val.z)       \
+    IMPL_UNIFORM_VEC(CAPITALIZED_TYPE, TYPE, 4##GL_TYPE, 4, val.x, val.y, val.z, val.w)
 
 IMPL_UNIFORM_VEC_ALL(Float, float, f)
 IMPL_UNIFORM_VEC_ALL(Int, int, i)
@@ -90,7 +91,7 @@ void GlGraphicsShader::SetUniformMatrix4x4(const std::string &name, const glm::m
     {
         throw std::runtime_error("Uniform '" + name + "' not found");
     }
-    glProgramUniformMatrix4fv(m_Program, location, 1, false, &matrix[0][0]);
+    glProgramUniformMatrix4fv(m_Program, location, 1, static_cast<GLboolean>(false), &matrix[0][0]);
 }
 
 
@@ -118,7 +119,7 @@ GLuint GlGraphicsShader::CompileShader(const GLenum shaderType, const std::strin
     if (compilationStatus == GL_FALSE)
     {
         std::vector<GLchar> infoLog(static_cast<size_t>(infoLogLength) + 1);
-        glGetShaderInfoLog(shader, infoLogLength, nullptr, &infoLog[0]);
+        glGetShaderInfoLog(shader, infoLogLength, nullptr, infoLog.data());
 
         throw std::runtime_error("Shader compilation failed: " + std::string(infoLog.begin(), infoLog.end()));
     }

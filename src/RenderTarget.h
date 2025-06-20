@@ -5,13 +5,23 @@
 class RenderTarget
 {
 public:
-    virtual void Bind() = 0;
+  RenderTarget(const RenderTarget &) = default;
 
-    virtual void Unbind() = 0;
+  RenderTarget(RenderTarget &&) = delete;
 
-    virtual glm::ivec2 GetDimensions() = 0;
+  RenderTarget &operator=(const RenderTarget &) = default;
 
-    virtual ~RenderTarget() = default;
+  RenderTarget &operator=(RenderTarget &&) = delete;
+
+  RenderTarget() = default;
+
+  virtual void Bind() = 0;
+
+  virtual void Unbind() = 0;
+
+  virtual glm::ivec2 GetDimensions() = 0;
+
+  virtual ~RenderTarget() = default;
 };
 
 #endif //RENDERTARGET_H
