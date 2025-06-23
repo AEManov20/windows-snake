@@ -1,5 +1,6 @@
 #ifndef GLFWWINDOW_H
 #define GLFWWINDOW_H
+#include <stdexcept>
 #include <string>
 
 #include "Window.h"
@@ -28,6 +29,14 @@ public:
     void SetPosition(glm::ivec2 position) override;
 
     glm::ivec2 GetPosition() override;
+
+    bool IsKeyDown(KeyCode key) override { throw std::runtime_error("not implemented"); }
+    
+    bool IsKeyUp(KeyCode key) override { throw std::runtime_error("not implemented"); }
+
+    bool IsKeyJustPressed(KeyCode key) override { throw std::runtime_error("not implemented"); }
+
+    bool IsKeyJustReleased(KeyCode key) override { throw std::runtime_error("not implemented"); }
 
     void Bind() override;
 

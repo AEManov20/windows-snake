@@ -4,11 +4,11 @@
 
 #ifndef SDLWINDOW_H
 #define SDLWINDOW_H
-#include <optional>
-#include <queue>
+#include <memory>
 #include <string>
 #include <unordered_map>
 
+#include "SdlEventQueue.h"
 #include "Window.h"
 #include <SDL3/SDL.h>
 
@@ -16,7 +16,7 @@
 class SdlWindow final : public Window
 {
 public:
-    SdlWindow(int width, int height, std::string title);
+    SdlWindow(int width, int height, std::string title, const std::shared_ptr<SdlEventQueue>& eventQueue);
 
     SdlWindow(SdlWindow &&other) noexcept;
 
@@ -36,6 +36,14 @@ public:
 
     glm::ivec2 GetPosition() override;
 
+    bool IsKeyDown(KeyCode key) override;
+
+    bool IsKeyUp(KeyCode key) override;
+
+    bool IsKeyJustPressed(KeyCode key) override;
+
+    bool IsKeyJustReleased(KeyCode key) override;
+
     void Bind() override;
 
     void Unbind() override;
@@ -45,16 +53,10 @@ public:
     ~SdlWindow() override;
 
 private:
-    // pushes event in the events map and relates it to a window id
-    static void PushEvent(unsigned int windowId, const SDL_Event &event);
-
-    // pops an event off the event map where the queue is related to the
-    // window id of the current instance
-    [[nodiscard]] std::optional<SDL_Event> PopEvent() const;
-
     void HandleEvent(const SDL_Event &event);
 
-    static std::unordered_map<unsigned int, std::queue<SDL_Event> > s_Events;
+    static KeyCode SdlKeyCodeToEnumKeyCode(SDL_Keycode sdlKeyCode);
+    static const char* SdlKeyCodeToString(SDL_Keycode sdlKeyCode);
 
     SDL_GLContext m_Context;
     SDL_Window *m_Handle;
@@ -62,6 +64,8 @@ private:
 
     std::string m_Title;
     bool m_ShouldClose = false;
+    std::unordered_map<KeyCode, PressedKeyState> m_KeyStates;
+    std::shared_ptr<SdlEventQueue> m_EventQueue;
 };
 
 

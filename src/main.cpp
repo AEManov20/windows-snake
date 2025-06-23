@@ -179,8 +179,39 @@ int main()
 
     while (frame != std::nullopt && !g_ShouldQuit)
     {
-        audioOutput->Write(*frame);
-        frame = audioSource->NextFrame();
+        window->PollEvents();
+
+        auto winResolution = window->GetDimensions();
+
+        glClearColor(0.f, 0.f, 0.f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, winResolution.x, winResolution.y);
+
+        shader->Bind();
+
+        glm::lookAt(const vec<3, T, Q> &eye, const vec<3, T, Q> &center, const vec<3, T, Q> &up)
+        // shader->SetUniformMatrix4x4("mvp", glm::perspective(
+        //                                        glm::radians(90.f),
+        //                                        static_cast<float>(winResolution.x) / static_cast<float>(
+        //                                            winResolution.y),
+        //                                        0.01f, 100.f) *
+        //                                    // view mat
+        //                                    lookAt(glm::vec3(0.f, 0.f, -3.f), glm::vec3(0.f, 0.f, 0.f),
+        //                                           glm::vec3(0.f, 1.f, 0.f)) *
+        //                                    // model mat
+        //                                    rotate(glm::mat4(1.f), glm::radians(degrees),
+        //                                           glm::vec3(0.f, 1.f, 0.f)) *
+        //                                    scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
+
+        shader->SetUniformMatrix4x4("mvp", glm::mat4(1.f));
+
+        vertexArray->Bind();
+
+        glDrawArrays(GL_TRIANGLES, 0, triangleVertices.size() / 3);
+
+        shader->Unbind();
+
+        window->SwapBuffers();
     }
 
     audioOutput.reset();
