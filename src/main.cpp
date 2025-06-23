@@ -1,3 +1,17 @@
+#include "CameraPerspective.h"
+#include "GlGraphicsShader.h"
+#include "GlVertexArray.h"
+#include "GlVertexBuffer.h"
+#include "SdlEventQueue.h"
+#include "SdlWindow.h"
+#include "VertexArray.h"
+#include "VertexBuffer.h"
+#include "Window.h"
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/quaternion_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <memory>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <epoxy/gl.h>
 #include <glm/gtx/color_space.hpp>
@@ -9,11 +23,8 @@
 #include <sstream>
 #include <vector>
 #include <iostream>
-#include <filesystem>
 #include <csignal>
 
-#include "Audio/AudioOutput.h"
-#include "Audio/AudioSource.h"
 
 static void errorCallback(int error, const char *description)
 {
@@ -62,22 +73,6 @@ std::vector<uint8_t> ReadBinaryFile(const std::string& fileName)
     return buffer;
 }
 
-GLuint createBufferFromData(const GLvoid *data, const GLsizeiptr size)
-{
-    GLuint buffer;
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    return buffer;
-}
-
-void freeBufferData(const GLuint buffer)
-{
-    glDeleteBuffers(1, &buffer);
-}
-
 void PrintGLVersion()
 {
     std::cout << "GL version: " << epoxy_gl_version();
@@ -117,6 +112,8 @@ bool InitSDLEnvironment()
 
     // request double-buffering
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
     // init SDL
     if (!SDL_Init(SDL_INIT_VIDEO))
@@ -160,142 +157,170 @@ int main()
 {
     signal(SIGINT, SignalInterruptHandler);
 
-    std::cout << std::filesystem::current_path() << '\n';
-    InitSDLAudioSubsystem();
+    // std::cout << std::filesystem::current_path() << '\n';
+    // InitSDLAudioSubsystem();
 
-    std::unique_ptr<AudioOutput> audioOutput = std::make_unique<SdlAudioOutput>(
-        SignalSpec{
-            .m_Rate = 48000,
-            .m_Channels = ChannelLayout(ChannelLayoutType::STEREO)
-        },
-        AudioEncoding::Float32);
+    // std::unique_ptr<AudioOutput> audioOutput = std::make_unique<SdlAudioOutput>(
+    //     SignalSpec{
+    //         .m_Rate = 48000,
+    //         .m_Channels = ChannelLayout(ChannelLayoutType::STEREO)
+    //     },
+    //     AudioEncoding::Float32);
 
-    std::shared_ptr<AudioSource> audioSource = std::make_shared<SourceSine>(SignalSpec{
-        .m_Rate = 48000,
-        .m_Channels = ChannelLayout(ChannelLayoutType::STEREO)
-    }, 440.f);
+    // std::shared_ptr<AudioSource> audioSource = std::make_shared<SourceSine>(SignalSpec{
+    //     .m_Rate = 48000,
+    //     .m_Channels = ChannelLayout(ChannelLayoutType::STEREO)
+    // }, 440.f);
 
-    auto frame = audioSource->NextFrame();
+    // auto frame = audioSource->NextFrame();
 
-    while (frame != std::nullopt && !g_ShouldQuit)
+    // while (frame != std::nullopt && !g_ShouldQuit)
+    // {
+    //     audioOutput->Write(*frame);
+    //     frame = audioSource->NextFrame();
+    // }
+
+    // audioOutput.reset();
+
+    // DeinitSDLEnvironment();
+    if (!InitSDLEnvironment()) return 1;
+
+    std::vector triangleVertices = {
+         1.F, 1.F, 1.F, // front top right
+         1.F,-1.F, 1.F, // front bottom right
+        -1.F, 1.F, 1.F, // front top left
+        -1.F,-1.F, 1.F, // front bottom left
+         1.F, 1.F,-1.F, // back top right
+         1.F,-1.F,-1.F, // back bottom right
+        -1.F, 1.F,-1.F, // back top left
+        -1.F,-1.F,-1.F, // back bottom right
+        // first triangle
+        // 0.5F, 0.5F, 0.F, // top right
+        // 0.5F, -0.5F, 0.F, // bottom right
+        // -0.5F, 0.5F, 0.F, // top left
+        // second triangle
+        // 0.5F, -0.5F, 0.F, // bottom right
+        // -0.5F, -0.5F, 0.F, // bottom left
+        // -0.5F, 0.5F, 0.F // top left
+    };
+
+    std::vector triangleColors = {
+        0.F, 0.F, 0.F,
+        0.F, 0.F, 1.F,
+        0.F, 1.F, 0.F,
+        0.F, 1.F, 1.F,
+        1.F, 0.F, 0.F,
+        1.F, 0.F, 1.F,
+        1.F, 1.F, 0.F,
+        1.F, 1.F, 1.F,
+    };
+
+    std::vector<std::uint32_t> indices = {
+        0, 4, 5,
+        5, 1, 0,
+        0, 3, 1,
+        3, 2, 0,
+        3, 6, 2,
+        3, 7, 6,
+        1, 3, 7,
+        1, 5, 7,
+        5, 7, 6,
+        5, 4, 6,
+        4, 6, 2,
+        4, 0, 2
+    };
+
+    std::shared_ptr eventQueue = std::make_shared<SdlEventQueue>();
+    std::unique_ptr<Window> window = std::make_unique<SdlWindow>(1920, 1080, "SdlWindow", eventQueue);
+
+    window->Bind();
+
+    std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<GlVertexBuffer>(
+        triangleVertices.data(), triangleVertices.size(), BufferItemLayout{
+            BufferElement(ShaderDataType::Float3, "position"),
+        });
+
+    std::shared_ptr<VertexBuffer> colorBuffer = std::make_shared<GlVertexBuffer>(
+        triangleColors.data(), triangleColors.size(), BufferItemLayout{
+            BufferElement(ShaderDataType::Float3, "color"),
+        });
+
+    std::unique_ptr<GraphicsShader> shader = std::make_unique<GlGraphicsShader>(
+        readFileToString("../resources/vertexShader.glsl"),
+        readFileToString("../resources/fragmentShader.glsl"));
+
+    std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<GlIndexBuffer>(indices.data(), indices.size());
+
+    std::unique_ptr<VertexArray> vertexArray = std::make_unique<GlVertexArray>();
+    vertexArray->AddVertexBuffer(vertexBuffer);
+    vertexArray->AddVertexBuffer(colorBuffer);
+    vertexArray->SetIndexBuffer(indexBuffer);
+
+    float degrees = 0.F;
+
+    auto winResolution = window->GetDimensions();
+
+    CameraPerspective camera = {
+        .m_FieldOfView = glm::radians(90.F),
+        .m_AspectRatio = static_cast<float>(winResolution.x) / static_cast<float>(winResolution.y),
+        .m_NearPlane = 0.1F,
+        .m_FarPlane = 100.F,
+        .m_Translation = glm::vec3(0.F, 0.F, 4.F)
+    };
+
+    while (!window->ShouldClose() && !g_ShouldQuit)
     {
+        eventQueue->Poll();
         window->PollEvents();
 
         auto winResolution = window->GetDimensions();
 
-        glClearColor(0.f, 0.f, 0.f, 1.0f);
+        glClearColor(0.F, 0.F, 0.F, 1.0F);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, winResolution.x, winResolution.y);
+        camera.m_AspectRatio = static_cast<float>(winResolution.x) / static_cast<float>(winResolution.y);
 
         shader->Bind();
 
-        glm::lookAt(const vec<3, T, Q> &eye, const vec<3, T, Q> &center, const vec<3, T, Q> &up)
         // shader->SetUniformMatrix4x4("mvp", glm::perspective(
         //                                        glm::radians(90.f),
         //                                        static_cast<float>(winResolution.x) / static_cast<float>(
         //                                            winResolution.y),
         //                                        0.01f, 100.f) *
         //                                    // view mat
-        //                                    lookAt(glm::vec3(0.f, 0.f, -3.f), glm::vec3(0.f, 0.f, 0.f),
+        //                                    lookAt(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f, 0.f, 0.f),
         //                                           glm::vec3(0.f, 1.f, 0.f)) *
         //                                    // model mat
         //                                    rotate(glm::mat4(1.f), glm::radians(degrees),
         //                                           glm::vec3(0.f, 1.f, 0.f)) *
         //                                    scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
-
-        shader->SetUniformMatrix4x4("mvp", glm::mat4(1.f));
+        shader->SetUniformMatrix4x4("mvp", camera.GetMVPMatrix(
+            rotate(glm::mat4(1.F), glm::radians(degrees), glm::vec3(1.F, 1.F, 1.F))));
 
         vertexArray->Bind();
 
-        glDrawArrays(GL_TRIANGLES, 0, triangleVertices.size() / 3);
+        glDrawElements(GL_TRIANGLES, indexBuffer->GetCount(), GL_UNSIGNED_INT, nullptr);
 
         shader->Unbind();
 
         window->SwapBuffers();
+
+        degrees += .1F;
+        if (degrees > 360.F)
+        {
+            degrees = 0.F;
+        }
     }
 
-    audioOutput.reset();
+    vertexArray.reset();
+    shader.reset();
+
+    vertexBuffer.reset();
+    colorBuffer.reset();
+
+    window.reset(nullptr);
 
     DeinitSDLEnvironment();
-    //
-    // if (!InitSDLEnvironment()) return 1;
-    //
-    // std::vector<float> triangleVertices = {};
-    //
-    // constexpr size_t sampleCount = 44100;
-    // float piStep = 360.f / static_cast<float>(sampleCount);
-    // for (size_t i = 0; i < sampleCount; i++)
-    // {
-    //     triangleVertices.push_back((static_cast<float>(i) / static_cast<float>(sampleCount)) * 2.f - 1.f);
-    //     triangleVertices.push_back(sinf(glm::radians(static_cast<float>(i) * piStep)));
-    //     triangleVertices.push_back(0.f);
-    //
-    //     triangleVertices.push_back((static_cast<float>(i + 1) / static_cast<float>(sampleCount)) * 2.f - 1.f);
-    //     triangleVertices.push_back(sinf(glm::radians(static_cast<float>(i + 1) * piStep)));
-    //     triangleVertices.push_back(0.f);
-    // }
-    //
-    // std::unique_ptr<Window> window = std::make_unique<SdlWindow>(1280, 720, "SdlWindow");
-    // window->Bind();
-    //
-    // std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<GlVertexBuffer>(
-    //     triangleVertices.data(), triangleVertices.size(), BufferItemLayout{
-    //         BufferElement(ShaderDataType::Float3, "position")
-    //     });
-    //
-    // std::unique_ptr<GraphicsShader> shader = std::make_unique<GlGraphicsShader>(
-    //     readFileToString("../resources/vertexShader.glsl"),
-    //     readFileToString("../resources/fragmentShader.glsl"));
-    //
-    // std::unique_ptr<VertexArray> vertexArray = std::make_unique<GlVertexArray>();
-    // vertexArray->AddVertexBuffer(vertexBuffer);
-    //
-    // float degrees = 0.f;
-    //
-    // while (!window->ShouldClose())
-    // {
-    //     window->PollEvents();
-    //
-    //     auto winResolution = window->GetDimensions();
-    //
-    //     glClearColor(0.f, 0.f, 0.f, 1.0f);
-    //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //     glViewport(0, 0, winResolution.x, winResolution.y);
-    //
-    //     shader->Bind();
-    //
-    //     // shader->SetUniformMatrix4x4("mvp", glm::perspective(
-    //     //                                        glm::radians(90.f),
-    //     //                                        static_cast<float>(winResolution.x) / static_cast<float>(
-    //     //                                            winResolution.y),
-    //     //                                        0.01f, 100.f) *
-    //     //                                    // view mat
-    //     //                                    lookAt(glm::vec3(0.f, 0.f, -3.f), glm::vec3(0.f, 0.f, 0.f),
-    //     //                                           glm::vec3(0.f, 1.f, 0.f)) *
-    //     //                                    // model mat
-    //     //                                    rotate(glm::mat4(1.f), glm::radians(degrees),
-    //     //                                           glm::vec3(0.f, 1.f, 0.f)) *
-    //     //                                    scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
-    //
-    //     shader->SetUniformMatrix4x4("mvp", glm::mat4(1.f));
-    //
-    //     vertexArray->Bind();
-    //
-    //     glDrawArrays(GL_LINES, 0, triangleVertices.size() / 3);
-    //
-    //     shader->Unbind();
-    //
-    //     window->SwapBuffers();
-    // }
-    //
-    // vertexArray.reset();
-    // shader.reset();
-    //
-    // vertexBuffer.reset();
-    //
-    // window.reset(nullptr);
-    //
-    // DeinitSDLEnvironment();
-    //
-    // return 0;
+
+    return 0;
 }
