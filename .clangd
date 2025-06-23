@@ -1,0 +1,8 @@
+CompileFlags:
+  Add: [-std=c++20]
+
+# Show more detailed diagnostics from clang
+Diagnostics:
+  ClangTidy:
+    Add: [modernize-*, bugprone-*, cppcoreguidelines-*, performance-*, readability-*, hicpp-*]
+    Remove: [modernize-use-trailing-return-type, cppcoreguidelines-pro-type-union-access]

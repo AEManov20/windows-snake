@@ -1,3 +1,7 @@
 .idea/
+.direnv/
+.cache/
 build/
 cmake-build-debug/
+
+.envrc
