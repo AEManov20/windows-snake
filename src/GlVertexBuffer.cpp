@@ -7,8 +7,8 @@
 #include <stdexcept>
 #include <utility>
 
-GlVertexBuffer::GlVertexBuffer(const size_t size, const BufferItemLayout layout)
-    : m_BufferId(0), m_Layout(layout)
+GlVertexBuffer::GlVertexBuffer(const size_t size, BufferItemLayout layout)
+    : m_BufferId(0), m_Layout(std::move(layout))
 {
     glGenBuffers(1, &m_BufferId);
     if (m_BufferId == 0)
@@ -138,5 +138,6 @@ void GlIndexBuffer::SetIndices(const uint32_t *indices, size_t count)
     glBindBuffer(GL_ARRAY_BUFFER, m_BufferId);
     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLsizeiptr>(count * sizeof(uint32_t)), indices);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
 
+    m_Count = count;
+}

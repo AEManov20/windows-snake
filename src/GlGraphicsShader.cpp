@@ -4,7 +4,6 @@
 
 #include "GlGraphicsShader.h"
 
-#include <GL/gl.h>
 #include <stdexcept>
 #include <utility>
 #include <vector>
