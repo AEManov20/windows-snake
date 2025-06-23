@@ -15,7 +15,7 @@
             glfw
             sdl3
             libepoxy
-            mpg123
+            libopus
             glm
             clang-tools
             cmake

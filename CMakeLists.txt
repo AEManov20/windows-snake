@@ -6,19 +6,24 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 
-link_libraries(GL glfw epoxy dl SDL3)
+link_libraries(GL opus glfw epoxy dl SDL3)
 
 add_executable(UntitledRenderingFramework src/main.cpp
         src/stb_image_impl.cpp
         src/RenderTarget.h
         src/Window.h
+        src/CameraPerspective.cpp
+        src/CameraPerspective.h
         src/GlfwWindow.cpp
         src/GlfwWindow.h
+        src/SdlEventQueue.cpp
+        src/SdlEventQueue.h
         src/SdlWindow.cpp
         src/SdlWindow.h
         src/GraphicsShader.h
         src/GlGraphicsShader.cpp
         src/GlGraphicsShader.h
+        src/Keyboard.h
         src/VertexBuffer.h
         src/GlVertexBuffer.cpp
         src/GlVertexBuffer.h
@@ -35,4 +40,6 @@ add_executable(UntitledRenderingFramework src/main.cpp
         src/Audio/ChannelLayout.cpp
         src/Audio/AudioSource.cpp
         src/Audio/AudioSourceSine.cpp
+        src/Audio/OpusSource.h
+        src/Audio/OpusSource.cpp
 )
