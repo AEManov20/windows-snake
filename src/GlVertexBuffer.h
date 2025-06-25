@@ -50,9 +50,9 @@ public:
 
     GlIndexBuffer &operator=(GlIndexBuffer &&other) noexcept;
 
-    GlIndexBuffer(const GlVertexBuffer &other) = delete;
+    GlIndexBuffer(const GlIndexBuffer &other) = delete;
 
-    GlIndexBuffer &operator=(const GlVertexBuffer &) = delete;
+    GlIndexBuffer &operator=(const GlIndexBuffer &other) = delete;
 
     ~GlIndexBuffer() override;
 
