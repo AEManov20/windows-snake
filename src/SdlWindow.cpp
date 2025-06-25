@@ -6,11 +6,13 @@
 #include "Keyboard.h"
 #include "SdlEventQueue.h"
 
+#include <SDL3/SDL_timer.h>
 #include <epoxy/gl.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_video.h>
 #include <iostream>
 #include <memory>
+#include <vector>
 #include <optional>
 #include <ostream>
 #include <utility>
@@ -50,7 +52,9 @@ SdlWindow::SdlWindow(SdlWindow &&other) noexcept : m_Context(std::exchange(other
                                                    m_Title(std::move(other.m_Title)),
                                                    m_ShouldClose(std::exchange(other.m_ShouldClose, true)),
                                                    m_EventQueue(std::exchange(other.m_EventQueue, nullptr)),
-                                                   m_KeyStates(std::move(other.m_KeyStates))
+                                                   m_KeyStates(std::move(other.m_KeyStates)),
+                                                   m_FrameTime(std::exchange(other.m_FrameTime, 0.F)),
+                                                   m_LastTimerValue(std::exchange(other.m_LastTimerValue, 0.F))
 {
 }
 
@@ -65,6 +69,8 @@ SdlWindow &SdlWindow::operator=(SdlWindow &&other) noexcept
     std::swap(m_ShouldClose, tmp.m_ShouldClose);
     std::swap(m_EventQueue, tmp.m_EventQueue);
     std::swap(m_KeyStates, tmp.m_KeyStates);
+    std::swap(m_FrameTime, tmp.m_FrameTime);
+    std::swap(m_LastTimerValue, tmp.m_LastTimerValue);
 
     return *this;
 }
@@ -82,8 +88,44 @@ void SdlWindow::SwapBuffers()
     }
 }
 
+std::float_t SdlWindow::GetFrameTime()
+{
+    return m_FrameTime;
+}
+
+void SdlWindow::UpdateKeyStates()
+{
+    std::vector<KeyCode> keyCodesToErase;
+    for (auto& [keyCode, keyState] : m_KeyStates)
+    {
+        if (keyState == PressedKeyState::JustPressed)
+        {
+            keyState = PressedKeyState::Down;
+        }
+        else if (keyState == PressedKeyState::JustReleased)
+        {
+            keyCodesToErase.push_back(keyCode);
+        }
+    }
+
+    for (const auto& keyCode : keyCodesToErase)
+    {
+        m_KeyStates.erase(keyCode);
+    }
+}
+
+void SdlWindow::UpdateFrameTime()
+{
+    std::uint64_t timerNow = SDL_GetPerformanceCounter();
+    m_FrameTime = static_cast<float>(timerNow - m_LastTimerValue) / static_cast<float>(SDL_GetPerformanceFrequency());
+    m_LastTimerValue = timerNow;
+}
+
 void SdlWindow::PollEvents()
 {
+    UpdateKeyStates();
+    UpdateFrameTime();
+
     for (auto event = m_EventQueue->PopForWindow(m_WindowId); event.has_value(); event = m_EventQueue->PopForWindow(m_WindowId))
     {
         HandleEvent(*event);
@@ -201,20 +243,27 @@ void SdlWindow::HandleEvent(const SDL_Event &event)
         {
             std::cout << m_WindowId << " will close next frame" << '\n';
             m_ShouldClose = true;
+            break;
         }
         case SDL_EVENT_KEY_DOWN:
         {
-            if (!event.key.repeat)
+            KeyCode keyCode = SdlKeyCodeToEnumKeyCode(event.key.key);
+            if (m_KeyStates.contains(keyCode))
             {
-                std::cout << "down " << SdlKeyCodeToString(event.key.key) << '\n';
+                m_KeyStates.at(keyCode) = PressedKeyState::JustPressed;
             }
+            m_KeyStates.emplace(keyCode, PressedKeyState::JustPressed);
+            break;
         }
         case SDL_EVENT_KEY_UP:
         {
-            if (!event.key.repeat)
+            KeyCode keyCode = SdlKeyCodeToEnumKeyCode(event.key.key);
+            if (m_KeyStates.contains(keyCode))
             {
-                std::cout << "up " << SdlKeyCodeToString(event.key.key) << '\n';
+                m_KeyStates.at(keyCode) = PressedKeyState::JustReleased;
             }
+            m_KeyStates.emplace(keyCode, PressedKeyState::JustReleased);
+            break;
         }
     }
 }

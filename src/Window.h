@@ -14,6 +14,8 @@ public:
 
     virtual void SwapBuffers() = 0;
 
+    virtual std::float_t GetFrameTime() = 0;
+
     virtual void PollEvents() = 0;
 
     virtual void SetPosition(glm::ivec2 position) = 0;
@@ -21,7 +23,7 @@ public:
     virtual glm::ivec2 GetPosition() = 0;
 
     virtual bool IsKeyDown(KeyCode key) = 0;
-    
+
     virtual bool IsKeyUp(KeyCode key) = 0;
 
     virtual bool IsKeyJustPressed(KeyCode key) = 0;

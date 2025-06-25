@@ -35,7 +35,9 @@ GlfwWindow::GlfwWindow(const int width, const int height, const string &title)
 }
 
 GlfwWindow::GlfwWindow(GlfwWindow &&other) noexcept : m_Handle(std::exchange(other.m_Handle, nullptr)),
-                                                      m_WindowTitle(std::move(other.m_WindowTitle))
+                                                      m_WindowTitle(std::move(other.m_WindowTitle)),
+                                                      m_FrameTime(std::exchange(other.m_FrameTime, 0.F)),
+                                                      m_LastTimerValue(std::exchange(other.m_LastTimerValue, 0.F))
 {
 }
 
@@ -44,6 +46,8 @@ GlfwWindow &GlfwWindow::operator=(GlfwWindow &&other) noexcept
     GlfwWindow temp(std::move(other));
     std::swap(m_Handle, temp.m_Handle);
     std::swap(m_WindowTitle, temp.m_WindowTitle);
+    std::swap(m_FrameTime, temp.m_FrameTime);
+    std::swap(m_LastTimerValue, temp.m_LastTimerValue);
 
     return *this;
 }
@@ -58,8 +62,22 @@ void GlfwWindow::SwapBuffers()
     glfwSwapBuffers(m_Handle);
 }
 
+std::float_t GlfwWindow::GetFrameTime()
+{
+    return m_FrameTime;
+}
+
+void GlfwWindow::UpdateFrameTime()
+{
+    auto timeNow = static_cast<float>(glfwGetTime());
+    m_FrameTime = timeNow - m_LastTimerValue;
+    m_LastTimerValue = timeNow;
+}
+
 void GlfwWindow::PollEvents()
 {
+    UpdateFrameTime();
+
     GLFWwindow *currentContext = glfwGetCurrentContext();
     if (currentContext != m_Handle)
     {

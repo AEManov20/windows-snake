@@ -4,6 +4,7 @@
 
 #ifndef SDLWINDOW_H
 #define SDLWINDOW_H
+#include <cmath>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -30,6 +31,8 @@ public:
 
     void SwapBuffers() override;
 
+    std::float_t GetFrameTime() override;
+
     void PollEvents() override;
 
     void SetPosition(glm::ivec2 position) override;
@@ -54,6 +57,8 @@ public:
 
 private:
     void HandleEvent(const SDL_Event &event);
+    void UpdateKeyStates();
+    void UpdateFrameTime();
 
     static KeyCode SdlKeyCodeToEnumKeyCode(SDL_Keycode sdlKeyCode);
     static const char* SdlKeyCodeToString(SDL_Keycode sdlKeyCode);
@@ -66,6 +71,9 @@ private:
     bool m_ShouldClose = false;
     std::unordered_map<KeyCode, PressedKeyState> m_KeyStates;
     std::shared_ptr<SdlEventQueue> m_EventQueue;
+
+    std::uint64_t m_LastTimerValue = 0.F; // used for retrieving frame time
+    std::float_t m_FrameTime = .016F;
 };
 
 

@@ -24,6 +24,8 @@ public:
 
     void SwapBuffers() override;
 
+    std::float_t GetFrameTime() override;
+
     void PollEvents() override;
 
     void SetPosition(glm::ivec2 position) override;
@@ -31,7 +33,7 @@ public:
     glm::ivec2 GetPosition() override;
 
     bool IsKeyDown(KeyCode key) override { throw std::runtime_error("not implemented"); }
-    
+
     bool IsKeyUp(KeyCode key) override { throw std::runtime_error("not implemented"); }
 
     bool IsKeyJustPressed(KeyCode key) override { throw std::runtime_error("not implemented"); }
@@ -47,8 +49,13 @@ public:
     ~GlfwWindow() override;
 
 private:
+    void UpdateFrameTime();
+
     GLFWwindow *m_Handle;
     std::string m_WindowTitle;
+
+    std::float_t m_LastTimerValue = 0.F;
+    std::float_t m_FrameTime = .016F;
 };
 
 

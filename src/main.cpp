@@ -275,6 +275,23 @@ int main()
 
         auto winResolution = window->GetDimensions();
 
+        if (window->IsKeyDown(KeyCode::W))
+        {
+            camera.m_Translation.z -= 10.F * window->GetFrameTime();
+        }
+        else if (window->IsKeyDown(KeyCode::S))
+        {
+            camera.m_Translation.z += 10.F * window->GetFrameTime();
+        }
+        else if (window->IsKeyDown(KeyCode::A))
+        {
+            camera.m_Translation.x -= 10.F * window->GetFrameTime();
+        }
+        else if (window->IsKeyDown(KeyCode::D))
+        {
+            camera.m_Translation.x += 10.F * window->GetFrameTime();
+        }
+
         glClearColor(0.F, 0.F, 0.F, 1.0F);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, winResolution.x, winResolution.y);
