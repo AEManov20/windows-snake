@@ -265,7 +265,7 @@ int main()
         .m_AspectRatio = static_cast<float>(winResolution.x) / static_cast<float>(winResolution.y),
         .m_NearPlane = 0.1F,
         .m_FarPlane = 100.F,
-        .m_Translation = glm::vec3(0.F, 0.F, 4.F)
+        .m_Translation = glm::vec3(0.F, 0.F, 0.F)
     };
 
     while (!window->ShouldClose() && !g_ShouldQuit)
@@ -273,21 +273,42 @@ int main()
         eventQueue->Poll();
         window->PollEvents();
 
+        std::cout << camera.m_ViewRotation.x << ' ' << camera.m_ViewRotation.y << ' ' << camera.m_ViewRotation.z << '\n';
         auto winResolution = window->GetDimensions();
+
+        if (window->IsKeyDown(KeyCode::Up))
+        {
+            camera.m_ViewRotation.y += 50.F * window->GetFrameTime();
+        }
+        if (window->IsKeyDown(KeyCode::Down))
+        {
+            camera.m_ViewRotation.y -= 50.F * window->GetFrameTime();
+        }
+        if (window->IsKeyDown(KeyCode::Left))
+        {
+            camera.m_ViewRotation.x += 50.F * window->GetFrameTime();
+        }
+        if (window->IsKeyDown(KeyCode::Right))
+        {
+            camera.m_ViewRotation.x -= 50.F * window->GetFrameTime();
+        }
 
         if (window->IsKeyDown(KeyCode::W))
         {
-            camera.m_Translation.z -= 10.F * window->GetFrameTime();
+            // camera.m_Translation.z -= 10.F * window->GetFrameTime();
+            camera.m_Translation += camera.GetFrontVector() * window->GetFrameTime();
         }
-        else if (window->IsKeyDown(KeyCode::S))
+        if (window->IsKeyDown(KeyCode::S))
         {
-            camera.m_Translation.z += 10.F * window->GetFrameTime();
+            camera.m_Translation -= camera.GetFrontVector() * window->GetFrameTime();
         }
-        else if (window->IsKeyDown(KeyCode::A))
+        if (window->IsKeyDown(KeyCode::A))
         {
-            camera.m_Translation.x -= 10.F * window->GetFrameTime();
+            // camera.m_Translation -= camera.GetFrontVector() * window->GetFrameTime();
+            // camera.m_Translation += glm::vec3(rotatedVector.x, rotatedVector.y, rotatedVector.z);
+            // camera.m_Translation.x -= 10.F * window->GetFrameTime();
         }
-        else if (window->IsKeyDown(KeyCode::D))
+        if (window->IsKeyDown(KeyCode::D))
         {
             camera.m_Translation.x += 10.F * window->GetFrameTime();
         }
@@ -299,19 +320,8 @@ int main()
 
         shader->Bind();
 
-        // shader->SetUniformMatrix4x4("mvp", glm::perspective(
-        //                                        glm::radians(90.f),
-        //                                        static_cast<float>(winResolution.x) / static_cast<float>(
-        //                                            winResolution.y),
-        //                                        0.01f, 100.f) *
-        //                                    // view mat
-        //                                    lookAt(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f, 0.f, 0.f),
-        //                                           glm::vec3(0.f, 1.f, 0.f)) *
-        //                                    // model mat
-        //                                    rotate(glm::mat4(1.f), glm::radians(degrees),
-        //                                           glm::vec3(0.f, 1.f, 0.f)) *
-        //                                    scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f)));
         shader->SetUniformMatrix4x4("mvp", camera.GetMVPMatrix(
+            translate(glm::mat4(1.F), glm::vec3(2.F, 0.F, 0.F)) *
             rotate(glm::mat4(1.F), glm::radians(degrees), glm::vec3(1.F, 1.F, 1.F))));
 
         vertexArray->Bind();
@@ -322,11 +332,11 @@ int main()
 
         window->SwapBuffers();
 
-        degrees += .1F;
-        if (degrees > 360.F)
-        {
-            degrees = 0.F;
-        }
+        // degrees += .1F;
+        // if (degrees > 360.F)
+        // {
+        //     degrees = 0.F;
+        // }
     }
 
     vertexArray.reset();

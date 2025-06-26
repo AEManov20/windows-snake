@@ -15,9 +15,11 @@ struct CameraPerspective
 
     // transform
     glm::vec3 m_Translation;
+    glm::vec3 m_ViewRotation;
 
     // methods
     [[nodiscard]] glm::mat4 GetMVPMatrix(glm::mat4 modelMatrix) const;
+    [[nodiscard]] glm::vec3 GetFrontVector() const;
 };
 
 #endif // CAMERA_H
