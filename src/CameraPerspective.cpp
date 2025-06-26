@@ -1,5 +1,6 @@
 #include "CameraPerspective.h"
 #include <cmath>
+#include <glm/ext/quaternion_geometric.hpp>
 #include <glm/geometric.hpp>
 #include <glm/trigonometric.hpp>
 
@@ -11,15 +12,20 @@
 glm::vec3 CameraPerspective::GetFrontVector() const
 {
     return glm::normalize(glm::vec3 {
-        m_Translation.x + (std::cos(glm::radians(m_ViewRotation.x)) * std::cos(glm::radians(m_ViewRotation.y))),
-        m_Translation.y + std::sin(glm::radians(m_ViewRotation.y)),
-        m_Translation.z - (std::sin(glm::radians(m_ViewRotation.x)) * std::cos(glm::radians(m_ViewRotation.y))),
+        std::cos(glm::radians(m_ViewRotation.x)) * std::cos(glm::radians(m_ViewRotation.y)),
+        std::sin(glm::radians(m_ViewRotation.y)),
+        std::sin(glm::radians(m_ViewRotation.x)) * std::cos(glm::radians(m_ViewRotation.y)),
     });
 }
 
 glm::mat4 CameraPerspective::GetMVPMatrix(glm::mat4 modelMatrix) const
 {
+    const auto& cameraPos = m_Translation;
+    const auto cameraFront = GetFrontVector();
+    const auto cameraRight = glm::normalize(glm::cross(cameraFront, c_UpVector));
+    const auto cameraUp = glm::normalize(glm::cross(cameraRight, cameraFront));
+
     return glm::perspective(m_FieldOfView, m_AspectRatio, m_NearPlane, m_FarPlane) *
-        (glm::lookAt(m_Translation, GetFrontVector(), c_UpVector)) *
+        (glm::lookAt(m_Translation, m_Translation + cameraFront, cameraUp)) *
         modelMatrix;
 }
